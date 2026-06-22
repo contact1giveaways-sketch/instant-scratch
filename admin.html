@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Instant Scratch</title>
+<title>Admin — Instant Prizes</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#F5C842;--gold-dim:#C49A1A;--black:#080808;--surface:#111;--card:#161616;--border:rgba(255,255,255,0.07);--text:#E8E8E8;--muted:#555;--green:#22C55E;--red:#EF4444;--blue:#3B82F6}
@@ -76,7 +76,7 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
       <div class="logo-box">🎰</div>
       <div>
         <div class="logo-name">Admin Panel</div>
-        <div class="logo-sub">Instant Scratch</div>
+        <div class="logo-sub">Instant Prizes</div>
       </div>
     </div>
     <a href="/" class="back-link">← Back to site</a>
@@ -197,6 +197,7 @@ function renderComps(){
         <div class="ar-sub">${c.totalTickets.toLocaleString()} tickets · ${c.maxDraws} draw${c.maxDraws!==1?'s':''}/user · ${c.active?'🟢 Active':'🔴 Paused'}</div>
       </div>
       <div class="ar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openEditModal('${c.id}')">✏️ Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="toggleComp('${c.id}')">${c.active?'Pause':'Activate'}</button>
         <button class="btn btn-danger btn-sm" onclick="deleteComp('${c.id}')">Delete</button>
       </div>
@@ -307,6 +308,69 @@ function showAlert(id,type,msg){
 }
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function fmtDate(s){if(!s)return'';const d=new Date(s);return isNaN(d)?s:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
+
+function openEditModal(id) {
+  const c = competitions.find(x => String(x.id) === String(id));
+  if (!c) return;
+  document.getElementById('edit-id').value = c.id;
+  document.getElementById('edit-name').value = c.name;
+  document.getElementById('edit-tickets').value = c.totalTickets;
+  document.getElementById('edit-maxdraws').value = c.maxDraws;
+  document.getElementById('edit-link').value = c.raffalLink || '';
+  document.getElementById('edit-modal').style.display = 'flex';
+  document.getElementById('edit-alert').classList.remove('show');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+}
+
+async function saveEdit() {
+  const id       = document.getElementById('edit-id').value;
+  const name     = document.getElementById('edit-name').value.trim();
+  const tickets  = document.getElementById('edit-tickets').value;
+  const maxDraws = document.getElementById('edit-maxdraws').value;
+  const link     = document.getElementById('edit-link').value.trim();
+  if (!name) return showAlert('edit-alert','error','Name is required.');
+  showAlert('edit-alert','info','Saving...');
+  const d = await apiPost({
+    action:'updateCompetition', password:adminPass,
+    id, name, totalTickets:tickets, maxDraws, raffalLink:link
+  });
+  if (d.error) return showAlert('edit-alert','error',d.error);
+  showAlert('edit-alert','success','✅ Saved!');
+  await refresh();
+  setTimeout(closeEditModal, 1200);
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeEditModal(); });
+
 </script>
+
+<!-- EDIT COMPETITION MODAL -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;padding:20px;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;width:100%;max-width:500px;position:relative;max-height:90vh;overflow-y:auto">
+    <button onclick="closeEditModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--gold);margin-bottom:20px">Edit Competition</div>
+    <div id="edit-alert" class="alert"></div>
+    <input type="hidden" id="edit-id">
+    <label>Competition Name</label>
+    <input type="text" id="edit-name" placeholder="Competition name" />
+    <div class="grid-2">
+      <div>
+        <label>Total Tickets</label>
+        <input type="number" id="edit-tickets" min="1" />
+      </div>
+      <div>
+        <label>Max Draws per User</label>
+        <input type="number" id="edit-maxdraws" min="1" />
+      </div>
+    </div>
+    <label>Raffall Link</label>
+    <input type="text" id="edit-link" placeholder="https://raffall.com/..." />
+    <button class="btn btn-gold btn-full" onclick="saveEdit()" style="margin-top:20px">💾 Save Changes</button>
+  </div>
+</div>
+
 </body>
 </html>
