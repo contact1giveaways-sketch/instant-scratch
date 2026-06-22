@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Giveaways — Instant Scratch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Giveaways — Instant Prizes</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#F5C842">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -29,7 +29,7 @@
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;overscroll-behavior-y:contain}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(245,200,66,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(245,200,66,0.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
 
 .wrap{max-width:900px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
@@ -175,6 +175,27 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
 
 @keyframes spin{to{transform:rotate(360deg)}}
 
+
+/* PULL TO REFRESH */
+.refresh-bar{
+  position:fixed;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--gold),var(--gold-dim));
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .3s ease;z-index:999;
+}
+.refresh-btn{
+  position:fixed;bottom:20px;right:20px;
+  width:44px;height:44px;border-radius:50%;
+  background:var(--gold);color:#000;
+  border:none;font-size:18px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(245,200,66,0.4);
+  display:flex;align-items:center;justify-content:center;
+  z-index:100;transition:all .2s;
+}
+.refresh-btn:hover{transform:scale(1.1)}
+.refresh-btn.spinning{animation:spinIcon .6s linear infinite}
+@keyframes spinIcon{to{transform:rotate(360deg)}}
+
 /* SLOT MACHINE */
 .slot-machine{
   background:linear-gradient(135deg,#1a1a1a,#0d0d0d);
@@ -307,7 +328,7 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
     <div class="logo">
       <div class="logo-box">🎰</div>
       <div>
-        <div class="logo-name">Instant Scratch</div>
+        <div class="logo-name">Instant Prizes</div>
         <div class="logo-sub">Giveaways Community</div>
       </div>
     </div>
@@ -513,6 +534,8 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
     </div>
   </div>
 
+  <div class="refresh-bar" id="refresh-bar"></div>
+  <button class="refresh-btn" id="refresh-btn" onclick="manualRefresh()" title="Refresh">↻</button>
 </div><!-- /wrap -->
 
 <script>
@@ -550,6 +573,21 @@ async function refreshAll() {
     renderCompList();
     populateFilters();
   } catch(e) { console.error(e); }
+}
+
+async function manualRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  if (btn) btn.classList.add('spinning');
+  await refreshAll();
+  // Also reload current tab data
+  const activeTab = document.querySelector('.tab.active');
+  if (activeTab) {
+    const tabName = activeTab.getAttribute('onclick').match(/switchTab\('(\w+)'/)?.[1];
+    if (tabName === 'winners') await loadWinners();
+    if (tabName === 'prizes') await loadPrizeList();
+    if (tabName === 'participants') await loadParticipants();
+  }
+  setTimeout(() => { if (btn) btn.classList.remove('spinning'); }, 600);
 }
 
 // ════════════════════════════════════════════════════════
@@ -614,31 +652,46 @@ async function selectComp(id) {
 }
 
 function backToList() {
+  // Full reset of play state
   document.getElementById('play-select-view').style.display = 'block';
   document.getElementById('play-draw-view').style.display = 'none';
   currentComp = null;
   currentUsername = "";
+  drawResult = null;
+  isRevealed = false;
+  isDrawing = false;
+  // Reset username input
+  const inp = document.getElementById('play-username');
+  if (inp) inp.value = '';
+  // Show username form, hide scratch
+  document.getElementById('username-form').style.display = 'block';
+  document.getElementById('scratch-area').style.display = 'none';
+  // Reset slot
+  resetScratch();
+  // Clear alerts
+  const alert = document.getElementById('play-alert');
+  if (alert) alert.classList.remove('show');
+  // Refresh competition list
+  refreshAll();
 }
 
 // ════════════════════════════════════════════════════════
 //  PLAY — Draw
 // ════════════════════════════════════════════════════════
 async function startPlay() {
-  const username = document.getElementById('play-username').value.trim();
-  if (!username) return showAlert('play-alert', 'error', 'Please enter your Raffall username.');
+  const raw = document.getElementById('play-username').value.trim();
+  if (!raw) return showAlert('play-alert', 'error', 'Please enter your Raffall username.');
+
+  // Normalize: remove @ prefix, trim — case kept for display but server compares lowercase
+  const username = raw.replace(/^@+/g, '').trim();
+  document.getElementById('play-username').value = username;
 
   showAlert('play-alert', 'info', 'Checking your entry...');
-  // Normalize username - trim spaces
-  const cleanUsername = username.replace(/^@/, '').trim();
-  if (cleanUsername !== username) {
-    document.getElementById('play-username').value = cleanUsername;
-  }
-
-  const status = await apiFetch({ action: 'checkUser', compId: currentComp.id, username: cleanUsername });
+  const status = await apiFetch({ action: 'checkUser', compId: currentComp.id, username });
   if (status.error) return showAlert('play-alert', 'error', status.error);
   if (!status.canDraw) return showAlert('play-alert', 'error', `You've used all ${currentComp.maxDraws} draw(s) for this competition.`);
 
-  currentUsername = username.replace(/^@/, '').trim();
+  currentUsername = username;
   document.getElementById('play-alert').classList.remove('show');
   document.getElementById('username-form').style.display = 'none';
   document.getElementById('scratch-area').style.display = 'block';
