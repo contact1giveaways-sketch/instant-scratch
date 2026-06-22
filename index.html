@@ -633,7 +633,7 @@ function renderCompList() {
       <div class="comp-badge">🟢 Active</div>
       <div class="comp-name">${esc(c.name)}</div>
       <div class="comp-meta">
-        <span>🎟️ ${c.totalTickets.toLocaleString()} tickets</span>
+
         <span>🎰 ${c.maxDraws} draw${c.maxDraws !== 1 ? 's' : ''} per person</span>
         ${c.raffalLink ? `<span>🔗 <a href="${esc(c.raffalLink)}" target="_blank" style="color:var(--gold)" onclick="event.stopPropagation()">Buy tickets →</a></span>` : ''}
       </div>
@@ -647,7 +647,7 @@ async function selectComp(id) {
   document.getElementById('play-draw-view').style.display = 'block';
   document.getElementById('comp-info-bar').innerHTML = `
     <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--gold);margin-bottom:4px">${esc(currentComp.name)}</div>
-    <div style="font-size:12px;color:var(--muted)">🎟️ ${currentComp.totalTickets.toLocaleString()} total tickets · ${currentComp.maxDraws} draw${currentComp.maxDraws !== 1 ? 's' : ''} per person</div>`;
+    <div style="font-size:12px;color:var(--muted)">🎰 ${currentComp.maxDraws} draw${currentComp.maxDraws !== 1 ? 's' : ''} per person</div>`;
   resetScratch();
 }
 
