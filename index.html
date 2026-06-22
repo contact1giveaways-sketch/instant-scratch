@@ -4,6 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Giveaways — Instant Scratch</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#F5C842">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Instant Scratch">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://instant-scratch.vercel.app/">
+<meta property="og:title" content="Instant Scratch — Giveaways Community">
+<meta property="og:description" content="Enter the draw instantly! Buy a ticket, scratch your card, win real prizes. Fully transparent — every prize visible from the start.">
+<meta property="og:image" content="https://instant-scratch.vercel.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://instant-scratch.vercel.app/og-image.png">
+<meta name="description" content="Enter the draw instantly! Buy a ticket, scratch your card, win real prizes.">
+
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -158,6 +174,31 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
 .user-status strong{color:var(--gold)}
 
 @keyframes spin{to{transform:rotate(360deg)}}
+/* MOBILE EXTRA */
+@media(max-width:480px){
+  .wrap{padding:0 12px}
+  header{padding:16px 0}
+  .logo-box{width:36px;height:36px;font-size:18px}
+  .logo-name{font-size:16px}
+  .tabs{margin-bottom:20px}
+  .tab{padding:9px 12px;font-size:12px}
+  .card{padding:16px}
+  .card-title{font-size:15px}
+  .scratch-headline{font-size:32px}
+  .scratch-card-wrap{width:240px;height:160px}
+  .stats-row{grid-template-columns:repeat(3,1fr);gap:8px}
+  .stat-val{font-size:22px}
+  .stat-box{padding:12px 8px}
+  .grid-2{grid-template-columns:1fr}
+  .admin-row{flex-wrap:wrap;gap:8px}
+  .ar-actions{width:100%;justify-content:flex-end}
+  .prizes-table th,.prizes-table td{padding:8px 8px;font-size:12px}
+}
+@media(max-width:360px){
+  .scratch-card-wrap{width:200px;height:140px}
+  .scratch-headline{font-size:26px}
+}
+
 .spinner{width:18px;height:18px;border:2px solid rgba(245,200,66,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 </style>
 </head>
@@ -177,7 +218,7 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
     <button class="tab active" onclick="switchTab('play',this)">🎟️ Play</button>
     <button class="tab" onclick="switchTab('winners',this)">🏆 Winners</button>
     <button class="tab" onclick="switchTab('prizes',this)">💰 Prize List</button>
-    <button class="tab" onclick="switchTab('admin',this)">⚙️ Admin</button>
+    <!-- admin tab hidden from public -->
   </div>
 
   <!-- ═══ PLAY ═══ -->
@@ -213,7 +254,7 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
 
             <div id="user-status-bar" class="user-status" style="display:none"></div>
 
-            <div class="scratch-card-wrap" id="scratch-card" onclick="revealCard()">
+            <div class="scratch-card-wrap" id="scratch-card" onclick="revealCard()" ontouchend="revealCard()">
               <!-- Front (scratch surface) -->
               <div class="scratch-card-front" id="scratch-front">
                 <div class="scratch-pattern"></div>
@@ -355,6 +396,9 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
     </div>
   </div>
 
+  <div style="text-align:center;padding:20px 0;margin-top:20px">
+    <a href="/admin.html" style="font-size:11px;color:#222;text-decoration:none">⚙</a>
+  </div>
 </div><!-- /wrap -->
 
 <script>
@@ -773,7 +817,7 @@ async function loadAdminDraws() {
         <div class="li-sub">${esc(dr.compName)} · Ticket #${dr.ticket}</div>
       </div>
       <div class="li-right">
-        <div style="font-size:13px;color:${dr.won ? 'var(--green)' : 'var(--muted)';font-weight:600}">${dr.won ? '🏆 ' + esc(dr.prize) : 'No prize'}</div>
+        <div style="font-size:13px;color:${dr.won ? 'var(--green)' : 'var(--muted)'};font-weight:600"">${dr.won ? '🏆 ' + esc(dr.prize) : 'No prize'}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtDate(dr.drawnAt)}</div>
       </div>
     </div>`).join('');
