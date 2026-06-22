@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giveaways — Instant Scratch</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#F5C842;--gold-dim:#C49A1A;--gold-glow:rgba(245,200,66,0.18);
+  --black:#080808;--surface:#111;--card:#161616;--border:rgba(255,255,255,0.07);
+  --text:#E8E8E8;--muted:#555;--green:#22C55E;--red:#EF4444;--blue:#3B82F6;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(245,200,66,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(245,200,66,0.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+
+.wrap{max-width:900px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+
+/* HEADER */
+header{padding:28px 0 24px;border-bottom:1px solid var(--border);margin-bottom:36px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-box{width:44px;height:44px;background:var(--gold);border-radius:12px;display:grid;place-items:center;font-size:24px;box-shadow:0 0 24px rgba(245,200,66,0.35)}
+.logo-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--gold);line-height:1}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:5px;margin-bottom:32px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:10px 16px;background:transparent;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;border-radius:10px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--card);color:var(--gold);box-shadow:0 2px 12px rgba(0,0,0,.4)}
+
+.section{display:none}
+.section.active{display:block}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--gold);margin-bottom:18px}
+
+/* COMPETITION LIST */
+.comp-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.comp-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),var(--gold-dim))}
+.comp-card:hover{border-color:rgba(245,200,66,0.25);transform:translateY(-2px)}
+.comp-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#fff;margin-bottom:6px}
+.comp-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.comp-meta span{display:flex;align-items:center;gap:4px}
+.comp-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:3px 10px;font-size:11px;font-weight:600;color:var(--green);margin-bottom:10px}
+.comp-badge.inactive{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:var(--red)}
+
+/* SCRATCH CARD */
+.scratch-section{text-align:center;padding:20px 0}
+.scratch-headline{font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:4px;background:linear-gradient(135deg,var(--gold),#fff,var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:8px}
+.scratch-sub{font-size:13px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:32px}
+
+/* The scratch card visual */
+.scratch-card-wrap{position:relative;width:280px;height:180px;margin:0 auto 28px;border-radius:18px;overflow:hidden;box-shadow:0 8px 40px rgba(245,200,66,0.15);cursor:pointer;user-select:none}
+.scratch-card-back{position:absolute;inset:0;background:linear-gradient(135deg,#1a1a1a,#2a2510);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.scratch-card-front{position:absolute;inset:0;background:linear-gradient(135deg,var(--gold-dim),var(--gold));display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s,transform .4s;z-index:2}
+.scratch-card-front.revealed{opacity:0;transform:scale(0.9);pointer-events:none}
+.scratch-pattern{position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(0,0,0,0.1) 0,rgba(0,0,0,0.1) 1px,transparent 0,transparent 50%);background-size:8px 8px}
+.scratch-icon{font-size:48px;margin-bottom:8px}
+.scratch-hint{font-size:13px;color:rgba(0,0,0,0.6);font-weight:600;letter-spacing:1px}
+/* Result inside card */
+.card-result{text-align:center}
+.card-result .ticket-num{font-family:'DM Mono',sans-serif;font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:8px}
+.card-result .result-icon{font-size:40px;margin-bottom:8px}
+.card-result .result-text{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--gold)}
+.card-result .result-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* Spinner dots */
+.dots{display:flex;gap:6px;justify-content:center;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:dotPulse 1.2s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+/* Win reveal */
+.win-reveal{background:linear-gradient(135deg,rgba(245,200,66,.12),rgba(245,200,66,.04));border:1px solid rgba(245,200,66,.3);border-radius:16px;padding:28px;text-align:center;margin-top:20px;animation:fadeUp .4s ease}
+.win-reveal.hidden{display:none}
+.no-prize-reveal{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px;padding:24px;text-align:center;margin-top:20px;animation:fadeUp .4s ease}
+.no-prize-reveal.hidden{display:none}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* PRIZES TABLE */
+.prizes-table{width:100%;border-collapse:collapse;margin-top:12px}
+.prizes-table th{text-align:left;font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border)}
+.prizes-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.prizes-table tr:last-child td{border-bottom:none}
+.prize-amount{font-family:'DM Mono',sans-serif;color:var(--gold);font-weight:500}
+.claimed-badge{background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.2);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600}
+.unclaimed-badge{background:rgba(245,200,66,0.1);color:var(--gold);border:1px solid rgba(245,200,66,0.2);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600}
+
+/* FORM */
+label{display:block;font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;margin-top:14px}
+label:first-child{margin-top:0}
+input,select{width:100%;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;margin-bottom:4px}
+input:focus,select:focus{border-color:rgba(245,200,66,.4)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:540px){.grid-2{grid-template-columns:1fr}}
+
+/* BUTTONS */
+.btn{padding:12px 22px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.btn-gold{background:var(--gold);color:#000;box-shadow:0 4px 20px rgba(245,200,66,.25)}
+.btn-gold:hover{background:#f7d155;transform:translateY(-1px)}
+.btn-gold:active{transform:translateY(0)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:rgba(245,200,66,.3);color:var(--gold)}
+.btn-danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red)}
+.btn-danger:hover{background:rgba(239,68,68,.2)}
+.btn-sm{padding:7px 14px;font-size:12px}
+.btn-full{width:100%;justify-content:center;margin-top:16px}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+
+/* ALERT */
+.alert{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px;display:none}
+.alert.show{display:block}
+.alert-success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:var(--green)}
+.alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red)}
+.alert-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:var(--blue)}
+
+/* ADMIN ROW */
+.admin-row{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px}
+.admin-row .ar-name{flex:1;font-weight:600;font-size:14px}
+.admin-row .ar-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.ar-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* LIST ITEM */
+.list-item{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;transition:border-color .2s}
+.list-item:hover{border-color:rgba(245,200,66,.15)}
+.li-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-dim));display:grid;place-items:center;font-size:14px;font-weight:700;color:#000;flex-shrink:0}
+.li-main{flex:1;min-width:0}
+.li-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.li-right{text-align:right;flex-shrink:0}
+
+/* BACK BTN */
+.back-btn{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;cursor:pointer;border:none;background:none;margin-bottom:20px;transition:color .2s}
+.back-btn:hover{color:var(--gold)}
+
+/* CONFETTI */
+.confetti-piece{position:fixed;width:9px;height:9px;border-radius:2px;pointer-events:none;z-index:999;animation:cf linear forwards}
+@keyframes cf{0%{transform:translateY(-80px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.5}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold);line-height:1}
+.stat-lbl{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+
+/* User status bar */
+.user-status{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.user-status strong{color:var(--gold)}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:18px;height:18px;border:2px solid rgba(245,200,66,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <div class="logo-box">🎰</div>
+      <div>
+        <div class="logo-name">Instant Scratch</div>
+        <div class="logo-sub">Giveaways Community</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('play',this)">🎟️ Play</button>
+    <button class="tab" onclick="switchTab('winners',this)">🏆 Winners</button>
+    <button class="tab" onclick="switchTab('prizes',this)">💰 Prize List</button>
+    <button class="tab" onclick="switchTab('admin',this)">⚙️ Admin</button>
+  </div>
+
+  <!-- ═══ PLAY ═══ -->
+  <div id="sec-play" class="section active">
+    <!-- Competition selection -->
+    <div id="play-select-view">
+      <div class="card">
+        <div class="card-title">Active Competitions</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Select a competition to enter the Instant Scratch draw. You must have a valid ticket on Raffall to participate.</p>
+        <div id="comp-list-play"></div>
+      </div>
+    </div>
+
+    <!-- Draw view -->
+    <div id="play-draw-view" style="display:none">
+      <button class="back-btn" onclick="backToList()">← Back to competitions</button>
+
+      <div class="card">
+        <div id="comp-info-bar" style="margin-bottom:20px"></div>
+
+        <div id="play-alert" class="alert"></div>
+
+        <div id="username-form">
+          <label>Your Raffall Username</label>
+          <input type="text" id="play-username" placeholder="e.g. john_doe123" />
+          <button class="btn btn-gold btn-full" onclick="startPlay()">🎰 Enter Draw</button>
+        </div>
+
+        <div id="scratch-area" style="display:none">
+          <div class="scratch-section">
+            <div class="scratch-headline">INSTANT SCRATCH</div>
+            <div class="scratch-sub" id="scratch-sub-text">Click the card to reveal your number</div>
+
+            <div id="user-status-bar" class="user-status" style="display:none"></div>
+
+            <div class="scratch-card-wrap" id="scratch-card" onclick="revealCard()">
+              <!-- Front (scratch surface) -->
+              <div class="scratch-card-front" id="scratch-front">
+                <div class="scratch-pattern"></div>
+                <div class="scratch-icon">🎰</div>
+                <div class="scratch-hint">TAP TO SCRATCH</div>
+              </div>
+              <!-- Back (result) -->
+              <div class="scratch-card-back" id="scratch-back">
+                <div class="card-result" id="card-result-content">
+                  <div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="win-reveal" class="win-reveal hidden">
+              <div style="font-size:48px;margin-bottom:12px">🏆</div>
+              <div style="font-size:11px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Congratulations!</div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;letter-spacing:2px;margin-bottom:6px" id="win-username"></div>
+              <div style="font-size:18px;color:var(--gold);font-weight:600" id="win-prize"></div>
+              <p style="font-size:12px;color:var(--muted);margin-top:12px">We'll contact you within 24 hours to arrange payment. 🦁</p>
+            </div>
+
+            <div id="no-prize-reveal" class="no-prize-reveal hidden">
+              <div style="font-size:36px;margin-bottom:10px">🎟️</div>
+              <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--text);margin-bottom:6px">No prize this time</div>
+              <p style="font-size:13px;color:var(--muted)">You're still in the main Raffall draw! Good luck 🦁</p>
+            </div>
+
+            <div id="play-again-area" style="display:none;margin-top:20px;text-align:center">
+              <button class="btn btn-ghost" onclick="playAgain()">🎰 Draw Again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ WINNERS ═══ -->
+  <div id="sec-winners" class="section">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <div class="card-title" style="margin-bottom:0">Recent Winners</div>
+        <select id="winners-comp-filter" onchange="loadWinners()" style="width:auto;margin:0;padding:8px 12px;font-size:12px">
+          <option value="">All Competitions</option>
+        </select>
+      </div>
+      <div id="winners-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ PRIZE LIST ═══ -->
+  <div id="sec-prizes" class="section">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <div class="card-title" style="margin-bottom:0">Prize List</div>
+        <select id="prizes-comp-filter" onchange="loadPrizeList()" style="width:auto;margin:0;padding:8px 12px;font-size:12px">
+          <option value="">Select Competition</option>
+        </select>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Full transparency — all prizes are listed here from the start. Every ticket number with a prize attached is visible to everyone.</p>
+      <div id="prize-list-content"></div>
+    </div>
+  </div>
+
+  <!-- ═══ ADMIN ═══ -->
+  <div id="sec-admin" class="section">
+    <!-- Login -->
+    <div id="admin-login" class="card">
+      <div class="card-title">Admin Login</div>
+      <div id="login-alert" class="alert"></div>
+      <label>Password</label>
+      <input type="password" id="admin-pass" placeholder="Admin password" onkeydown="if(event.key==='Enter')adminLogin()" />
+      <button class="btn btn-gold btn-full" onclick="adminLogin()">🔐 Login</button>
+    </div>
+
+    <!-- Panel -->
+    <div id="admin-panel" style="display:none">
+
+      <!-- Create competition -->
+      <div class="card">
+        <div class="card-title">Create Competition</div>
+        <div id="create-alert" class="alert"></div>
+        <label>Competition Name</label>
+        <input type="text" id="new-name" placeholder="e.g. 50% Cash Pool — June 2026" />
+        <div class="grid-2">
+          <div>
+            <label>Total Tickets</label>
+            <input type="number" id="new-tickets" placeholder="10000" value="10000" min="1" />
+          </div>
+          <div>
+            <label>Max Draws per User</label>
+            <input type="number" id="new-maxdraws" placeholder="1" value="1" min="1" />
+          </div>
+        </div>
+        <label>Raffall Link</label>
+        <input type="text" id="new-link" placeholder="https://raffall.com/..." />
+        <button class="btn btn-gold btn-full" onclick="createCompetition()">✅ Create Competition</button>
+      </div>
+
+      <!-- Active competitions -->
+      <div class="card">
+        <div class="card-title">Active Competitions</div>
+        <div id="admin-comp-list"></div>
+      </div>
+
+      <!-- Add prize -->
+      <div class="card" id="add-prize-card">
+        <div class="card-title">Add Prize to Competition</div>
+        <div id="prize-alert" class="alert"></div>
+        <label>Competition</label>
+        <select id="prize-comp-select"></select>
+        <div class="grid-2">
+          <div>
+            <label>Ticket Number</label>
+            <input type="number" id="prize-ticket" placeholder="e.g. 547" min="1" />
+          </div>
+          <div>
+            <label>Prize</label>
+            <input type="text" id="prize-value" placeholder="e.g. £100 Cash" />
+          </div>
+        </div>
+        <button class="btn btn-gold btn-full" onclick="addPrize()">➕ Add Prize</button>
+
+        <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Current Prizes</div>
+          <div id="admin-prizes-list"></div>
+        </div>
+      </div>
+
+      <!-- Draws log -->
+      <div class="card">
+        <div class="card-title">Draw Log</div>
+        <select id="admin-draws-filter" onchange="loadAdminDraws()" style="margin-bottom:14px;width:auto;padding:8px 12px;font-size:12px">
+          <option value="">All Competitions</option>
+        </select>
+        <div id="admin-draws-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CONFIG — replace with your Apps Script URL
+// ════════════════════════════════════════════════════════
+const API_URL = "https://script.google.com/macros/s/AKfycbzIQ2b2agqHqnTkQ9NZKKUGT-CZtbQjie1Zd_JziJPW2Q4iwNOIGoDDLp5SUzAboqDejw/exec";
+
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
+let db = { competitions: [], prizes: [], draws: [] };
+let adminPass = "";
+let currentComp = null;
+let currentUsername = "";
+let drawResult = null;
+let isRevealed = false;
+let isDrawing = false;
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  if (API_URL === "YOUR_APPS_SCRIPT_URL_HERE") {
+    alert("⚠️ Set your Apps Script URL in the config!");
+    return;
+  }
+  await refreshAll();
+});
+
+async function refreshAll() {
+  try {
+    const d = await apiFetch({ action: "getCompetitions" });
+    db.competitions = d.competitions || [];
+    renderCompList();
+    populateFilters();
+  } catch(e) { console.error(e); }
+}
+
+// ════════════════════════════════════════════════════════
+//  API
+// ════════════════════════════════════════════════════════
+async function apiFetch(params) {
+  const url = API_URL + "?" + new URLSearchParams(params);
+  const r = await fetch(url);
+  return r.json();
+}
+async function apiPost(body) {
+  const params = new URLSearchParams({ action: body.action, body: JSON.stringify(body) });
+  const r = await fetch(API_URL + "?" + params);
+  return r.json();
+}
+
+// ════════════════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sec-' + name).classList.add('active');
+  if (name === 'winners') loadWinners();
+  if (name === 'prizes') loadPrizeList();
+  if (name === 'admin' && adminPass) loadAdminPanel();
+}
+
+// ════════════════════════════════════════════════════════
+//  PLAY — Competition List
+// ════════════════════════════════════════════════════════
+function renderCompList() {
+  const el = document.getElementById('comp-list-play');
+  const active = db.competitions.filter(c => c.active);
+  if (!active.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🎟️</div><p>No active competitions right now.<br>Check back soon!</p></div>';
+    return;
+  }
+  el.innerHTML = active.map(c => `
+    <div class="comp-card" onclick="selectComp('${c.id}')">
+      <div class="comp-badge">🟢 Active</div>
+      <div class="comp-name">${esc(c.name)}</div>
+      <div class="comp-meta">
+        <span>🎟️ ${c.totalTickets.toLocaleString()} tickets</span>
+        <span>🎰 ${c.maxDraws} draw${c.maxDraws !== 1 ? 's' : ''} per person</span>
+        ${c.raffalLink ? `<span>🔗 <a href="${esc(c.raffalLink)}" target="_blank" style="color:var(--gold)" onclick="event.stopPropagation()">Buy tickets →</a></span>` : ''}
+      </div>
+    </div>`).join('');
+}
+
+async function selectComp(id) {
+  currentComp = db.competitions.find(c => String(c.id) === String(id));
+  if (!currentComp) return;
+  document.getElementById('play-select-view').style.display = 'none';
+  document.getElementById('play-draw-view').style.display = 'block';
+  document.getElementById('comp-info-bar').innerHTML = `
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--gold);margin-bottom:4px">${esc(currentComp.name)}</div>
+    <div style="font-size:12px;color:var(--muted)">🎟️ ${currentComp.totalTickets.toLocaleString()} total tickets · ${currentComp.maxDraws} draw${currentComp.maxDraws !== 1 ? 's' : ''} per person</div>`;
+  resetScratch();
+}
+
+function backToList() {
+  document.getElementById('play-select-view').style.display = 'block';
+  document.getElementById('play-draw-view').style.display = 'none';
+  currentComp = null;
+  currentUsername = "";
+}
+
+// ════════════════════════════════════════════════════════
+//  PLAY — Draw
+// ════════════════════════════════════════════════════════
+async function startPlay() {
+  const username = document.getElementById('play-username').value.trim();
+  if (!username) return showAlert('play-alert', 'error', 'Please enter your Raffall username.');
+
+  showAlert('play-alert', 'info', 'Checking your entry...');
+  const status = await apiFetch({ action: 'checkUser', compId: currentComp.id, username });
+  if (status.error) return showAlert('play-alert', 'error', status.error);
+  if (!status.canDraw) return showAlert('play-alert', 'error', `You've used all ${currentComp.maxDraws} draw(s) for this competition.`);
+
+  currentUsername = username;
+  document.getElementById('play-alert').classList.remove('show');
+  document.getElementById('username-form').style.display = 'none';
+  document.getElementById('scratch-area').style.display = 'block';
+
+  if (currentComp.maxDraws > 1) {
+    const bar = document.getElementById('user-status-bar');
+    bar.style.display = 'flex';
+    bar.innerHTML = `👤 <strong>${esc(username)}</strong> · ${status.drawsUsed} of ${status.maxDraws} draws used · <strong style="color:var(--green)">${status.remaining} remaining</strong>`;
+  }
+
+  // Perform the draw immediately (backend)
+  isDrawing = true;
+  const result = await apiPost({ action: 'performDraw', compId: currentComp.id, username });
+  isDrawing = false;
+  drawResult = result;
+
+  if (result.error) {
+    document.getElementById('username-form').style.display = 'block';
+    document.getElementById('scratch-area').style.display = 'none';
+    return showAlert('play-alert', 'error', result.error);
+  }
+}
+
+function revealCard() {
+  if (isRevealed || isDrawing || !drawResult) return;
+  isRevealed = true;
+
+  document.getElementById('scratch-front').classList.add('revealed');
+
+  if (drawResult.won) {
+    document.getElementById('card-result-content').innerHTML = `
+      <div class="ticket-num">TICKET #${drawResult.ticket}</div>
+      <div class="result-icon">🏆</div>
+      <div class="result-text">${esc(drawResult.prize)}</div>
+      <div class="result-sub">WINNER!</div>`;
+    setTimeout(() => {
+      document.getElementById('win-username').textContent = currentUsername;
+      document.getElementById('win-prize').textContent = drawResult.prize;
+      document.getElementById('win-reveal').classList.remove('hidden');
+      launchConfetti();
+    }, 500);
+  } else {
+    document.getElementById('card-result-content').innerHTML = `
+      <div class="ticket-num">TICKET #${drawResult.ticket}</div>
+      <div class="result-icon">🎟️</div>
+      <div class="result-text" style="-webkit-text-fill-color:var(--muted);color:var(--muted)">NO PRIZE</div>
+      <div class="result-sub">Keep your ticket for the main draw!</div>`;
+    setTimeout(() => {
+      document.getElementById('no-prize-reveal').classList.remove('hidden');
+    }, 500);
+  }
+
+  // Show play again if draws remaining
+  if (drawResult.remaining > 0) {
+    setTimeout(() => {
+      document.getElementById('play-again-area').style.display = 'block';
+    }, 1000);
+  }
+}
+
+function playAgain() {
+  resetScratch();
+  document.getElementById('play-again-area').style.display = 'none';
+  // Update status bar
+  apiFetch({ action: 'checkUser', compId: currentComp.id, username: currentUsername }).then(status => {
+    if (currentComp.maxDraws > 1) {
+      const bar = document.getElementById('user-status-bar');
+      bar.innerHTML = `👤 <strong>${esc(currentUsername)}</strong> · ${status.drawsUsed} of ${status.maxDraws} draws used · <strong style="color:${status.remaining > 0 ? 'var(--green)' : 'var(--red)'}">${status.remaining} remaining</strong>`;
+    }
+    if (!status.canDraw) {
+      document.getElementById('scratch-sub-text').textContent = "No more draws available for this competition.";
+      document.getElementById('scratch-card').style.cursor = 'default';
+      return;
+    }
+    // Perform next draw
+    isDrawing = true;
+    apiPost({ action: 'performDraw', compId: currentComp.id, username: currentUsername }).then(result => {
+      isDrawing = false;
+      drawResult = result;
+      if (result.error) {
+        document.getElementById('scratch-sub-text').textContent = result.error;
+      }
+    });
+  });
+}
+
+function resetScratch() {
+  isRevealed = false;
+  isDrawing = false;
+  drawResult = null;
+  document.getElementById('scratch-front').classList.remove('revealed');
+  document.getElementById('card-result-content').innerHTML = '<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  document.getElementById('win-reveal').classList.add('hidden');
+  document.getElementById('no-prize-reveal').classList.add('hidden');
+  document.getElementById('scratch-sub-text').textContent = 'Click the card to reveal your number';
+  document.getElementById('scratch-card').style.cursor = 'pointer';
+}
+
+// ════════════════════════════════════════════════════════
+//  WINNERS
+// ════════════════════════════════════════════════════════
+async function loadWinners() {
+  const compId = document.getElementById('winners-comp-filter').value;
+  const d = await apiFetch({ action: 'getDraws', compId: compId || '' });
+  const draws = (d.draws || []).filter(dr => dr.won).slice().reverse();
+  const el = document.getElementById('winners-list');
+  if (!draws.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🏆</div><p>No winners yet — the first draw is coming soon!</p></div>';
+    return;
+  }
+  el.innerHTML = draws.map(dr => `
+    <div class="list-item">
+      <div class="li-avatar">${(dr.username[0]||'?').toUpperCase()}</div>
+      <div class="li-main">
+        <div class="li-name">${esc(dr.username)}</div>
+        <div class="li-sub">${esc(dr.compName)} · Ticket #${dr.ticket}</div>
+      </div>
+      <div class="li-right">
+        <div style="color:var(--gold);font-weight:600;font-size:13px">${esc(dr.prize)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtDate(dr.drawnAt)}</div>
+      </div>
+      <div style="font-size:18px">🏆</div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+//  PRIZE LIST
+// ════════════════════════════════════════════════════════
+async function loadPrizeList() {
+  const compId = document.getElementById('prizes-comp-filter').value;
+  if (!compId) {
+    document.getElementById('prize-list-content').innerHTML = '<div class="empty"><div class="empty-icon">💰</div><p>Select a competition above to see the full prize list.</p></div>';
+    return;
+  }
+  const d = await apiFetch({ action: 'getPrizes', compId });
+  const prizes = (d.prizes || []).sort((a,b) => a.ticket - b.ticket);
+  const el = document.getElementById('prize-list-content');
+  if (!prizes.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">💰</div><p>No prizes added yet.</p></div>';
+    return;
+  }
+  const claimed = prizes.filter(p => p.claimed).length;
+  el.innerHTML = `
+    <div class="stats-row" style="margin-bottom:16px">
+      <div class="stat-box"><div class="stat-val">${prizes.length}</div><div class="stat-lbl">Total Prizes</div></div>
+      <div class="stat-box"><div class="stat-val">${claimed}</div><div class="stat-lbl">Claimed</div></div>
+      <div class="stat-box"><div class="stat-val">${prizes.length - claimed}</div><div class="stat-lbl">Remaining</div></div>
+    </div>
+    <table class="prizes-table">
+      <thead><tr><th>Ticket #</th><th>Prize</th><th>Status</th><th>Won By</th></tr></thead>
+      <tbody>${prizes.map(p => `
+        <tr>
+          <td><span style="font-family:'DM Mono',monospace;color:var(--gold)">#${p.ticket}</span></td>
+          <td class="prize-amount">${esc(p.prize)}</td>
+          <td>${p.claimed ? '<span class="claimed-badge">✓ Claimed</span>' : '<span class="unclaimed-badge">Available</span>'}</td>
+          <td style="font-size:12px;color:var(--muted)">${p.claimed ? esc(p.claimedBy) : '—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  FILTERS
+// ════════════════════════════════════════════════════════
+function populateFilters() {
+  const opts = db.competitions.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  ['winners-comp-filter','prizes-comp-filter','prize-comp-select','admin-draws-filter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const hasAll = id !== 'prize-comp-select';
+    el.innerHTML = (hasAll ? '<option value="">All Competitions</option>' : '<option value="">Select Competition</option>') + opts;
+  });
+  if (adminPass) loadAdminPrizes();
+}
+
+// ════════════════════════════════════════════════════════
+//  ADMIN
+// ════════════════════════════════════════════════════════
+async function adminLogin() {
+  const pass = document.getElementById('admin-pass').value;
+  if (!pass) return;
+  const d = await apiPost({ action: 'checkAdmin', password: pass });
+  if (!d.ok) return showAlert('login-alert', 'error', 'Incorrect password.');
+  adminPass = pass;
+  document.getElementById('admin-login').style.display = 'none';
+  document.getElementById('admin-panel').style.display = 'block';
+  loadAdminPanel();
+}
+
+async function loadAdminPanel() {
+  await refreshAll();
+  renderAdminComps();
+  loadAdminPrizes();
+  loadAdminDraws();
+}
+
+function renderAdminComps() {
+  const el = document.getElementById('admin-comp-list');
+  if (!db.competitions.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>No competitions yet.</p></div>'; return; }
+  el.innerHTML = db.competitions.map(c => `
+    <div class="admin-row">
+      <div class="li-main">
+        <div class="ar-name">${esc(c.name)}</div>
+        <div class="ar-sub">${c.totalTickets.toLocaleString()} tickets · ${c.maxDraws} draw${c.maxDraws!==1?'s':''}/user · ${c.active ? '🟢 Active' : '🔴 Inactive'}</div>
+      </div>
+      <div class="ar-actions">
+        <button class="btn btn-ghost btn-sm" onclick="toggleComp('${c.id}')">${c.active ? 'Pause' : 'Activate'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteComp('${c.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function createCompetition() {
+  const name = document.getElementById('new-name').value.trim();
+  if (!name) return showAlert('create-alert', 'error', 'Enter a competition name.');
+  showAlert('create-alert', 'info', 'Creating...');
+  const d = await apiPost({ action: 'createCompetition', password: adminPass, name,
+    totalTickets: document.getElementById('new-tickets').value,
+    maxDraws: document.getElementById('new-maxdraws').value,
+    raffalLink: document.getElementById('new-link').value.trim()
+  });
+  if (d.error) return showAlert('create-alert', 'error', d.error);
+  showAlert('create-alert', 'success', '✅ Competition created!');
+  document.getElementById('new-name').value = '';
+  document.getElementById('new-link').value = '';
+  await refreshAll();
+  renderAdminComps();
+  populateFilters();
+}
+
+async function toggleComp(id) {
+  await apiPost({ action: 'toggleCompetition', password: adminPass, id });
+  await refreshAll();
+  renderAdminComps();
+  renderCompList();
+}
+
+async function deleteComp(id) {
+  if (!confirm('Delete this competition and all its data?')) return;
+  await apiPost({ action: 'deleteCompetition', password: adminPass, id });
+  await refreshAll();
+  renderAdminComps();
+  renderCompList();
+  populateFilters();
+}
+
+async function addPrize() {
+  const compId = document.getElementById('prize-comp-select').value;
+  const ticket = document.getElementById('prize-ticket').value;
+  const prize  = document.getElementById('prize-value').value.trim();
+  if (!compId) return showAlert('prize-alert', 'error', 'Select a competition.');
+  if (!ticket) return showAlert('prize-alert', 'error', 'Enter a ticket number.');
+  if (!prize)  return showAlert('prize-alert', 'error', 'Enter a prize description.');
+  showAlert('prize-alert', 'info', 'Adding...');
+  const d = await apiPost({ action: 'addPrize', password: adminPass, compId, ticket, prize });
+  if (d.error) return showAlert('prize-alert', 'error', d.error);
+  showAlert('prize-alert', 'success', `✅ Prize added to ticket #${ticket}!`);
+  document.getElementById('prize-ticket').value = '';
+  document.getElementById('prize-value').value = '';
+  loadAdminPrizes();
+}
+
+async function loadAdminPrizes() {
+  const compId = document.getElementById('prize-comp-select').value;
+  if (!compId) { document.getElementById('admin-prizes-list').innerHTML = '<p style="font-size:13px;color:var(--muted)">Select a competition above.</p>'; return; }
+  const d = await apiFetch({ action: 'getPrizes', compId });
+  const prizes = (d.prizes || []).sort((a,b) => a.ticket - b.ticket);
+  const el = document.getElementById('admin-prizes-list');
+  if (!prizes.length) { el.innerHTML = '<p style="font-size:13px;color:var(--muted)">No prizes yet.</p>'; return; }
+  el.innerHTML = prizes.map(p => `
+    <div class="admin-row" style="margin-bottom:6px">
+      <div class="li-main">
+        <div style="font-size:13px">Ticket <strong style="color:var(--gold)">#${p.ticket}</strong> — ${esc(p.prize)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${p.claimed ? '✓ Claimed by ' + esc(p.claimedBy) : 'Available'}</div>
+      </div>
+      ${!p.claimed ? `<button class="btn btn-danger btn-sm" onclick="deletePrize('${p.id}')">Delete</button>` : ''}
+    </div>`).join('');
+}
+
+async function deletePrize(id) {
+  if (!confirm('Delete this prize?')) return;
+  await apiPost({ action: 'deletePrize', password: adminPass, id });
+  loadAdminPrizes();
+}
+
+async function loadAdminDraws() {
+  const compId = document.getElementById('admin-draws-filter').value;
+  const d = await apiFetch({ action: 'getDraws', compId: compId || '' });
+  const draws = (d.draws || []).slice().reverse().slice(0, 50);
+  const el = document.getElementById('admin-draws-list');
+  if (!draws.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>No draws yet.</p></div>'; return; }
+  el.innerHTML = draws.map(dr => `
+    <div class="list-item">
+      <div class="li-avatar">${(dr.username[0]||'?').toUpperCase()}</div>
+      <div class="li-main">
+        <div class="li-name">${esc(dr.username)}</div>
+        <div class="li-sub">${esc(dr.compName)} · Ticket #${dr.ticket}</div>
+      </div>
+      <div class="li-right">
+        <div style="font-size:13px;color:${dr.won ? 'var(--green)' : 'var(--muted)';font-weight:600}">${dr.won ? '🏆 ' + esc(dr.prize) : 'No prize'}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtDate(dr.drawnAt)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════════════
+//  CONFETTI
+// ════════════════════════════════════════════════════════
+function launchConfetti() {
+  const colors = ['#F5C842','#ffffff','#22C55E','#3B82F6','#F97316'];
+  for (let i = 0; i < 80; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.cssText = `left:${Math.random()*100}vw;background:${colors[Math.floor(Math.random()*colors.length)]};width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;animation-duration:${2+Math.random()*2}s;border-radius:${Math.random()>.5?'50%':'2px'}`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4500);
+    }, Math.random() * 800);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `alert alert-${type} show`;
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 5000);
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(s) { if(!s)return''; const d=new Date(s); return isNaN(d)?s:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+</script>
+</body>
+</html>
