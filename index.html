@@ -1235,13 +1235,17 @@ async function savePin() {
 
 function populateCreditComps() {
   const sel = document.getElementById('credits-comp-select');
-  const active = db.competitions.filter(c => c.active && c.creditCost > 0);
+  const active = db.competitions.filter(c => c.active);
   if (!active.length) {
-    sel.innerHTML = '<option value="">No competitions accept credits right now</option>';
+    sel.innerHTML = '<option value="">No active competitions right now</option>';
     document.getElementById('spend-btn').disabled = true;
     return;
   }
-  sel.innerHTML = active.map(c => `<option value="${c.id}">${esc(c.name)} (${c.creditCost} credits/spin)</option>`).join('');
+  sel.innerHTML = active.map(c => {
+    const cost = parseInt(c.creditCost) || 0;
+    const label = cost > 0 ? `${esc(c.name)} (${cost} credits/spin)` : `${esc(c.name)} (credits not enabled)`;
+    return `<option value="${c.id}" data-cost="${cost}">${label}</option>`;
+  }).join('');
   loadCreditCost();
 }
 
@@ -1251,9 +1255,15 @@ function loadCreditCost() {
   const infoEl = document.getElementById('credit-cost-info');
   const btn = document.getElementById('spend-btn');
   if (!comp) { infoEl.style.display = 'none'; return; }
+  const cost = parseInt(comp.creditCost) || 0;
   infoEl.style.display = 'block';
-  const canAfford = creditsUser.balance >= comp.creditCost;
-  infoEl.innerHTML = `Cost: <strong style="color:var(--gold)">${comp.creditCost} credits</strong> per spin · Your balance: <strong style="color:${canAfford ? 'var(--green)' : 'var(--red)'}">${creditsUser.balance} credits</strong>`;
+  if (cost === 0) {
+    infoEl.innerHTML = `<span style="color:var(--red)">Credits not enabled for this competition.</span>`;
+    btn.disabled = true;
+    return;
+  }
+  const canAfford = creditsUser.balance >= cost;
+  infoEl.innerHTML = `Cost: <strong style="color:var(--gold)">${cost} credits</strong> per spin · Your balance: <strong style="color:${canAfford ? 'var(--green)' : 'var(--red)'}">${creditsUser.balance} credits</strong>`;
   btn.disabled = !canAfford;
 }
 
@@ -1265,11 +1275,13 @@ async function spendCreditsForSpin() {
 
   showAlert('credits-alert', 'info', 'Processing...');
   const comp = db.competitions.find(c => String(c.id) === String(compId));
+  const cost = parseInt(comp.creditCost) || 0;
+  if (cost === 0) return showAlert('credits-alert', 'error', 'Credits not enabled for this competition.');
   const d = await apiPost({
     action: 'spendCredits',
     username: creditsUser.username,
     pin,
-    amount: comp.creditCost,
+    amount: cost,
     compId
   });
 
