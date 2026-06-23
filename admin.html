@@ -112,6 +112,16 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
         </div>
         <label>Raffall Link</label>
         <input type="text" id="new-link" placeholder="https://raffall.com/..." />
+        <div class="grid-2">
+          <div>
+            <label>Credit Cost per Spin <span style="color:var(--muted);font-size:10px">(0 = credits not accepted)</span></label>
+            <input type="number" id="new-creditcost" value="0" min="0" />
+          </div>
+          <div>
+            <label>Max Credit Draws per User</label>
+            <input type="number" id="new-maxcreditdraws" value="1" min="1" />
+          </div>
+        </div>
         <button class="btn btn-gold btn-full" onclick="createCompetition()">✅ Create Competition</button>
       </div>
       <div class="card">
@@ -194,7 +204,7 @@ function renderComps(){
     <div class="admin-row">
       <div class="ar-main">
         <div class="ar-name">${esc(c.name)}</div>
-        <div class="ar-sub">${c.totalTickets.toLocaleString()} tickets · ${c.maxDraws} draw${c.maxDraws!==1?'s':''}/user · ${c.active?'🟢 Active':'🔴 Paused'}</div>
+        <div class="ar-sub">${c.totalTickets.toLocaleString()} tickets · ${c.maxDraws} draw${c.maxDraws!==1?'s':''}/user · ${c.creditCost>0?'⭐ '+c.creditCost+' credits/spin':''} · ${c.active?'🟢 Active':'🔴 Paused'}</div>
       </div>
       <div class="ar-actions">
         <button class="btn btn-ghost btn-sm" onclick="openEditModal('${c.id}')">✏️ Edit</button>
@@ -317,6 +327,8 @@ function openEditModal(id) {
   document.getElementById('edit-tickets').value = c.totalTickets;
   document.getElementById('edit-maxdraws').value = c.maxDraws;
   document.getElementById('edit-link').value = c.raffalLink || '';
+  document.getElementById('edit-creditcost').value = c.creditCost || 0;
+  document.getElementById('edit-maxcreditdraws').value = c.maxCreditDraws || 1;
   document.getElementById('edit-modal').style.display = 'flex';
   document.getElementById('edit-alert').classList.remove('show');
 }
@@ -333,9 +345,12 @@ async function saveEdit() {
   const link     = document.getElementById('edit-link').value.trim();
   if (!name) return showAlert('edit-alert','error','Name is required.');
   showAlert('edit-alert','info','Saving...');
+  const creditCost     = document.getElementById('edit-creditcost').value;
+  const maxCreditDraws = document.getElementById('edit-maxcreditdraws').value;
   const d = await apiPost({
     action:'updateCompetition', password:adminPass,
-    id, name, totalTickets:tickets, maxDraws, raffalLink:link
+    id, name, totalTickets:tickets, maxDraws, raffalLink:link,
+    creditCost, maxCreditDraws
   });
   if (d.error) return showAlert('edit-alert','error',d.error);
   showAlert('edit-alert','success','✅ Saved!');
@@ -346,6 +361,12 @@ async function saveEdit() {
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeEditModal(); });
 
 </script>
+
+<!-- CREDITS ADMIN SECTION -->
+<div style="margin-top:16px" id="credits-admin-section" class="card" style="display:none">
+  <div class="card-title">⭐ Credit Balances</div>
+  <div id="credits-admin-list"></div>
+</div>
 
 <!-- EDIT COMPETITION MODAL -->
 <div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;padding:20px;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
@@ -368,6 +389,16 @@ document.addEventListener('keydown', e => { if(e.key==='Escape') closeEditModal(
     </div>
     <label>Raffall Link</label>
     <input type="text" id="edit-link" placeholder="https://raffall.com/..." />
+    <div class="grid-2">
+      <div>
+        <label>Credit Cost per Spin</label>
+        <input type="number" id="edit-creditcost" value="0" min="0" />
+      </div>
+      <div>
+        <label>Max Credit Draws</label>
+        <input type="number" id="edit-maxcreditdraws" value="1" min="1" />
+      </div>
+    </div>
     <button class="btn btn-gold btn-full" onclick="saveEdit()" style="margin-top:20px">💾 Save Changes</button>
   </div>
 </div>
