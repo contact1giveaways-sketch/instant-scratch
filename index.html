@@ -339,6 +339,7 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
     <button class="tab" onclick="switchTab('winners',this)">🏆 Winners</button>
     <button class="tab" onclick="switchTab('prizes',this)">💰 Prize List</button>
     <button class="tab" onclick="switchTab('participants',this)">👥 Participants</button>
+    <button class="tab" onclick="switchTab('credits',this)">⭐ My Credits</button>
     <!-- admin tab hidden from public -->
   </div>
 
@@ -454,6 +455,85 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
       <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Everyone who entered the draw — winners and non-winners alike.</p>
       <div id="participants-stats" style="margin-bottom:16px"></div>
       <div id="participants-list"></div>
+    </div>
+  </div>
+
+
+  <!-- ═══ CREDITS ═══ -->
+  <div id="sec-credits" class="section">
+    <div class="card">
+      <div class="card-title">⭐ My Credits</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Credits are earned by winning special prizes in Instant Draws. Use them for extra spins — even without a Raffall ticket!</p>
+
+      <!-- Check balance -->
+      <div id="credits-check-view">
+        <label>Your Raffall Username</label>
+        <input type="text" id="credits-username" placeholder="e.g. john_doe123" />
+        <button class="btn btn-gold btn-full" onclick="checkCredits()">Check My Credits</button>
+      </div>
+
+      <!-- Balance display -->
+      <div id="credits-balance-view" style="display:none">
+        <div style="text-align:center;padding:24px 0">
+          <div style="font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Your Balance</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--gold);line-height:1" id="credits-balance-num">0</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px">credits</div>
+          <div style="font-size:13px;color:var(--text);margin-top:12px;font-weight:600" id="credits-username-display"></div>
+        </div>
+
+        <!-- PIN setup or verify -->
+        <div id="pin-setup-view" style="display:none">
+          <div style="background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2);border-radius:12px;padding:16px;margin-bottom:16px">
+            <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">🔐 Set your PIN</div>
+            <p style="font-size:12px;color:var(--muted)">Create a 4-digit PIN to secure your credits. You'll need it every time you spend credits.</p>
+          </div>
+          <label>Choose a 4-digit PIN</label>
+          <input type="number" id="pin-input" placeholder="e.g. 1234" maxlength="4" style="letter-spacing:8px;font-size:20px;text-align:center" />
+          <button class="btn btn-gold btn-full" onclick="savePin()">🔐 Set PIN</button>
+        </div>
+
+        <!-- Use credits for spin -->
+        <div id="credits-spend-view" style="display:none">
+          <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:8px">
+            <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px">Use credits for an extra spin:</div>
+            <label>Select Competition</label>
+            <select id="credits-comp-select" onchange="loadCreditCost()"></select>
+            <div id="credit-cost-info" style="font-size:13px;color:var(--muted);padding:10px 0;display:none"></div>
+            <label>Your 4-digit PIN</label>
+            <input type="number" id="credits-pin-input" placeholder="····" maxlength="4" style="letter-spacing:8px;font-size:20px;text-align:center" />
+            <div id="credits-alert" class="alert"></div>
+            <button class="btn btn-gold btn-full" onclick="spendCreditsForSpin()" id="spend-btn">🎰 Spin with Credits</button>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost btn-full" onclick="resetCreditsView()" style="margin-top:12px">← Check another username</button>
+      </div>
+
+      <!-- Result after credit spin -->
+      <div id="credits-spin-result" style="display:none;margin-top:20px">
+        <div id="credits-slot-display" style="text-align:center;padding:20px 0">
+          <div style="font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">YOUR TICKET NUMBER</div>
+          <div style="display:flex;gap:8px;justify-content:center;background:#050505;border-radius:12px;padding:16px;border:1px solid rgba(245,200,66,0.1)">
+            <span class="slot-digit" id="cs-d1">?</span>
+            <span class="slot-digit" id="cs-d2">?</span>
+            <span class="slot-digit" id="cs-d3">?</span>
+            <span class="slot-digit" id="cs-d4">?</span>
+            <span class="slot-digit" id="cs-d5">?</span>
+          </div>
+        </div>
+        <div id="credits-win-result" style="display:none;text-align:center;padding:20px;background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2);border-radius:16px">
+          <div style="font-size:40px;margin-bottom:8px">🏆</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--gold);letter-spacing:2px" id="credits-win-prize"></div>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px">We'll contact you within 24 hours! 🦁</p>
+        </div>
+        <div id="credits-no-prize" style="display:none;text-align:center;padding:20px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:16px">
+          <div style="font-size:36px;margin-bottom:8px">🎟️</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--text)">NO PRIZE THIS TIME</div>
+          <p style="font-size:12px;color:var(--muted);margin-top:6px">Better luck next time! 🦁</p>
+        </div>
+        <div id="credits-new-balance" style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted)"></div>
+        <button class="btn btn-ghost btn-full" onclick="resetCreditsSpinResult()" style="margin-top:12px">Try Again</button>
+      </div>
     </div>
   </div>
 
@@ -615,6 +695,7 @@ function switchTab(name, btn) {
   if (name === 'winners') loadWinners();
   if (name === 'prizes') loadPrizeList();
   if (name === 'participants') loadParticipants();
+  if (name === 'credits') { populateFilters(); }
   if (name === 'admin' && adminPass) loadAdminPanel();
 }
 
@@ -750,6 +831,9 @@ function showResult() {
   const btn = document.getElementById('spin-btn');
   btn.style.display = 'none';
 
+  // Check if credits were awarded
+  if (drawResult.creditsAwarded > 0) checkCreditWin(drawResult);
+
   if (drawResult.won) {
     setTimeout(() => {
       document.getElementById('win-username').textContent = currentUsername;
@@ -882,7 +966,7 @@ async function loadPrizeList() {
 // ════════════════════════════════════════════════════════
 function populateFilters() {
   const opts = db.competitions.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
-  ['winners-comp-filter','prizes-comp-filter','prize-comp-select','admin-draws-filter','participants-comp-filter'].forEach(id => {
+  ['winners-comp-filter','prizes-comp-filter','prize-comp-select','admin-draws-filter','participants-comp-filter','credits-comp-select'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
     const hasAll = id !== 'prize-comp-select';
@@ -1104,6 +1188,168 @@ function showAlert(id, type, msg) {
 }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtDate(s) { if(!s)return''; const d=new Date(s); return isNaN(d)?s:d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+
+// ════════════════════════════════════════════════════════
+//  CREDITS SYSTEM
+// ════════════════════════════════════════════════════════
+let creditsUser = { username: '', balance: 0, hasPin: false };
+let creditSpinResult = null;
+
+async function checkCredits() {
+  const username = document.getElementById('credits-username').value.trim().replace(/^@+/g, '');
+  if (!username) return;
+  const d = await apiFetch({ action: 'getCredits', username });
+  creditsUser = { username, balance: d.balance || 0, hasPin: d.hasPin || false };
+
+  document.getElementById('credits-check-view').style.display = 'none';
+  document.getElementById('credits-balance-view').style.display = 'block';
+  document.getElementById('credits-balance-num').textContent = creditsUser.balance;
+  document.getElementById('credits-username-display').textContent = '@' + username;
+
+  if (!creditsUser.hasPin) {
+    document.getElementById('pin-setup-view').style.display = 'block';
+    document.getElementById('credits-spend-view').style.display = 'none';
+  } else {
+    document.getElementById('pin-setup-view').style.display = 'none';
+    if (creditsUser.balance > 0) {
+      document.getElementById('credits-spend-view').style.display = 'block';
+      populateCreditComps();
+    }
+  }
+}
+
+async function savePin() {
+  const pin = document.getElementById('pin-input').value.trim();
+  if (!/^\d{4}$/.test(pin)) return alert('PIN must be exactly 4 digits!');
+  const d = await apiPost({ action: 'setPin', username: creditsUser.username, pin });
+  if (d.error) return alert(d.error);
+  creditsUser.hasPin = true;
+  document.getElementById('pin-setup-view').style.display = 'none';
+  if (creditsUser.balance > 0) {
+    document.getElementById('credits-spend-view').style.display = 'block';
+    populateCreditComps();
+  } else {
+    showAlert('credits-alert', 'success', '✅ PIN set! Use it when you earn credits.');
+  }
+}
+
+function populateCreditComps() {
+  const sel = document.getElementById('credits-comp-select');
+  const active = db.competitions.filter(c => c.active && c.creditCost > 0);
+  if (!active.length) {
+    sel.innerHTML = '<option value="">No competitions accept credits right now</option>';
+    document.getElementById('spend-btn').disabled = true;
+    return;
+  }
+  sel.innerHTML = active.map(c => `<option value="${c.id}">${esc(c.name)} (${c.creditCost} credits/spin)</option>`).join('');
+  loadCreditCost();
+}
+
+function loadCreditCost() {
+  const compId = document.getElementById('credits-comp-select').value;
+  const comp = db.competitions.find(c => String(c.id) === String(compId));
+  const infoEl = document.getElementById('credit-cost-info');
+  const btn = document.getElementById('spend-btn');
+  if (!comp) { infoEl.style.display = 'none'; return; }
+  infoEl.style.display = 'block';
+  const canAfford = creditsUser.balance >= comp.creditCost;
+  infoEl.innerHTML = `Cost: <strong style="color:var(--gold)">${comp.creditCost} credits</strong> per spin · Your balance: <strong style="color:${canAfford ? 'var(--green)' : 'var(--red)'}">${creditsUser.balance} credits</strong>`;
+  btn.disabled = !canAfford;
+}
+
+async function spendCreditsForSpin() {
+  const compId = document.getElementById('credits-comp-select').value;
+  const pin    = document.getElementById('credits-pin-input').value.trim();
+  if (!compId) return showAlert('credits-alert', 'error', 'Select a competition.');
+  if (!/^\d{4}$/.test(pin)) return showAlert('credits-alert', 'error', 'Enter your 4-digit PIN.');
+
+  showAlert('credits-alert', 'info', 'Processing...');
+  const comp = db.competitions.find(c => String(c.id) === String(compId));
+  const d = await apiPost({
+    action: 'spendCredits',
+    username: creditsUser.username,
+    pin,
+    amount: comp.creditCost,
+    compId
+  });
+
+  if (d.error) return showAlert('credits-alert', 'error', d.error);
+
+  // Show spin animation
+  document.getElementById('credits-spend-view').style.display = 'none';
+  document.getElementById('credits-balance-view').querySelector('button').style.display = 'none';
+  document.getElementById('credits-spin-result').style.display = 'block';
+  creditSpinResult = d;
+
+  // Animate slot digits
+  const digits = String(d.ticket).padStart(5, '0').split('');
+  const dEls = [1,2,3,4,5].map(i => document.getElementById('cs-d' + i));
+  dEls.forEach(el => { el.classList.add('spinning'); });
+
+  digits.forEach((dig, i) => {
+    setTimeout(() => {
+      const el = dEls[i];
+      el.classList.remove('spinning');
+      el.textContent = dig;
+      el.classList.add('landed');
+      setTimeout(() => el.classList.remove('landed'), 400);
+      if (i === digits.length - 1) {
+        setTimeout(() => showCreditResult(d), 600);
+      }
+    }, 400 + i * 300);
+  });
+}
+
+function showCreditResult(d) {
+  if (d.won) {
+    document.getElementById('credits-win-prize').textContent = d.prize;
+    document.getElementById('credits-win-result').style.display = 'block';
+    launchConfetti();
+  } else {
+    document.getElementById('credits-no-prize').style.display = 'block';
+  }
+  creditsUser.balance = d.newBalance || 0;
+  document.getElementById('credits-new-balance').textContent = `Remaining balance: ${creditsUser.balance} credits`;
+}
+
+function resetCreditsView() {
+  document.getElementById('credits-check-view').style.display = 'block';
+  document.getElementById('credits-balance-view').style.display = 'none';
+  document.getElementById('credits-spin-result').style.display = 'none';
+  document.getElementById('credits-username').value = '';
+}
+
+function resetCreditsSpinResult() {
+  document.getElementById('credits-spin-result').style.display = 'none';
+  document.getElementById('credits-win-result').style.display = 'none';
+  document.getElementById('credits-no-prize').style.display = 'none';
+  document.getElementById('credits-new-balance').textContent = '';
+  [1,2,3,4,5].forEach(i => {
+    const el = document.getElementById('cs-d' + i);
+    if (el) { el.textContent = '?'; el.classList.remove('spinning','landed'); }
+  });
+  // Refresh balance
+  document.getElementById('credits-balance-num').textContent = creditsUser.balance;
+  if (creditsUser.balance > 0) {
+    document.getElementById('credits-spend-view').style.display = 'block';
+    document.getElementById('credits-balance-view').querySelector('button').style.display = 'block';
+    loadCreditCost();
+  } else {
+    document.getElementById('credits-spend-view').style.display = 'none';
+  }
+}
+
+// Auto-set PIN popup when user wins credits
+function checkCreditWin(result) {
+  if (!result.creditsAwarded || result.creditsAwarded <= 0) return;
+  setTimeout(() => {
+    const msg = `🎉 You won ${result.creditsAwarded} credits!
+
+Go to the ⭐ My Credits tab to set your PIN and use them for extra spins.`;
+    alert(msg);
+  }, 1500);
+}
+
 </script>
 </body>
 </html>
