@@ -859,7 +859,7 @@ function showResult() {
   if (drawResult.won) {
     setTimeout(() => {
       document.getElementById('win-username').textContent = currentUsername;
-      const isCredit = drawResult.prize && drawResult.prize.toLowerCase().includes('credit');
+      const isCredit = drawResult.prize && String(drawResult.prize).toLowerCase().includes('credit');
       document.getElementById('win-prize').textContent = isCredit ? '⭐ ' + drawResult.prize : '£' + drawResult.prize;
       document.getElementById('win-reveal').classList.remove('hidden');
       launchConfetti();
@@ -979,7 +979,7 @@ async function loadPrizeList() {
     <table class="prizes-table">
       <thead><tr><th>Ticket #</th><th>Prize</th><th>Status</th><th>Won By</th></tr></thead>
       <tbody>${prizes.map(p => {
-        const isCredit = p.prize && p.prize.toLowerCase().includes('credit');
+        const isCredit = p.prize && String(p.prize).toLowerCase().includes('credit');
         const displayPrize = isCredit ? '⭐ ' + esc(p.prize) : '£' + esc(p.prize);
         return `<tr>
           <td><span style="font-family:'DM Mono',monospace;color:var(--gold)">#${p.ticket}</span></td>
