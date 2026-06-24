@@ -463,7 +463,14 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
   <div id="sec-credits" class="section">
     <div class="card">
       <div class="card-title">⭐ My Credits</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:20px">Credits are earned by winning special prizes in Instant Draws. Use them for extra spins — even without a Raffall ticket!</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">Credits are earned by winning special prizes in Instant Draws. Use them for extra spins — even without a Raffall ticket!</p>
+      <div style="background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">💡</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--gold)">1 Credit = £0.01</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">500 credits = £5 · 1,000 credits = £10 · 10,000 credits = £100</div>
+        </div>
+      </div>
 
       <!-- Check balance -->
       <div id="credits-check-view">
@@ -837,7 +844,8 @@ function showResult() {
   if (drawResult.won) {
     setTimeout(() => {
       document.getElementById('win-username').textContent = currentUsername;
-      document.getElementById('win-prize').textContent = drawResult.prize;
+      const isCredit = drawResult.prize && drawResult.prize.toLowerCase().includes('credit');
+      document.getElementById('win-prize').textContent = isCredit ? '⭐ ' + drawResult.prize : '£' + drawResult.prize;
       document.getElementById('win-reveal').classList.remove('hidden');
       launchConfetti();
     }, 300);
@@ -950,13 +958,15 @@ async function loadPrizeList() {
     </div>
     <table class="prizes-table">
       <thead><tr><th>Ticket #</th><th>Prize</th><th>Status</th><th>Won By</th></tr></thead>
-      <tbody>${prizes.map(p => `
-        <tr>
+      <tbody>${prizes.map(p => {
+        const isCredit = p.prize && p.prize.toLowerCase().includes('credit');
+        const displayPrize = isCredit ? '⭐ ' + esc(p.prize) : '£' + esc(p.prize);
+        return `<tr>
           <td><span style="font-family:'DM Mono',monospace;color:var(--gold)">#${p.ticket}</span></td>
-          <td class="prize-amount">${esc(p.prize)}</td>
+          <td class="prize-amount">${displayPrize}</td>
           <td>${p.claimed ? '<span class="claimed-badge">✓ Claimed</span>' : '<span class="unclaimed-badge">Available</span>'}</td>
           <td style="font-size:12px;color:var(--muted)">${p.claimed ? esc(p.claimedBy) : '—'}</td>
-        </tr>`).join('')}
+        </tr>`;}).join('')}
       </tbody>
     </table>`;
 }
