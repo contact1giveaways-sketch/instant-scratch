@@ -435,7 +435,6 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
         <div class="card-title" style="margin-bottom:0">Prize List</div>
         <select id="prizes-comp-filter" onchange="loadPrizeList()" style="width:auto;margin:0;padding:8px 12px;font-size:12px">
-          <option value="">Select Competition</option>
         </select>
       </div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:16px">Full transparency — all prizes are listed here from the start. Every ticket number with a prize attached is visible to everyone.</p>
@@ -704,10 +703,13 @@ function switchTab(name, btn) {
     setTimeout(() => {
       if (db.competitions.length > 0) {
         const el = document.getElementById('prizes-comp-filter');
-        if (el && !el.value) el.value = db.competitions[0].id;
+        if (el) {
+          // Always select first competition
+          el.value = String(db.competitions[0].id);
+        }
       }
       loadPrizeList();
-    }, 50);
+    }, 200);
   }
   if (name === 'participants') loadParticipants();
   if (name === 'credits') { populateFilters(); }
@@ -995,11 +997,10 @@ function populateFilters() {
   if (db.competitions.length > 0) {
     const prizeFilter = document.getElementById('prizes-comp-filter');
     if (prizeFilter) {
-      // Set value and force reload
       setTimeout(() => {
-        prizeFilter.value = db.competitions[0].id;
-        if (prizeFilter.value) loadPrizeList();
-      }, 100);
+        prizeFilter.value = String(db.competitions[0].id);
+        loadPrizeList();
+      }, 200);
     }
   }
 }
