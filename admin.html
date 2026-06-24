@@ -122,7 +122,10 @@ input:focus,select:focus{border-color:rgba(245,200,66,.4)}
             <input type="number" id="new-maxcreditdraws" value="1" min="1" />
           </div>
         </div>
-        <button class="btn btn-gold btn-full" onclick="createCompetition()">✅ Create Competition</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+          <button class="btn btn-ghost" onclick="createCompetition(false)" style="justify-content:center">💾 Save as Draft</button>
+          <button class="btn btn-gold" onclick="createCompetition(true)" style="justify-content:center">✅ Publish Now</button>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">All Competitions</div>
@@ -182,7 +185,7 @@ async function adminLogin(){
 }
 
 async function refresh(){
-  const d=await apiFetch({action:'getCompetitions'});
+  const d=await apiFetch({action:'getCompetitions', includeAll:'true'});
   competitions=d.competitions||[];
   renderComps();
   populateSelects();
@@ -204,11 +207,11 @@ function renderComps(){
     <div class="admin-row">
       <div class="ar-main">
         <div class="ar-name">${esc(c.name)}</div>
-        <div class="ar-sub">${c.totalTickets.toLocaleString()} tickets · ${c.maxDraws} draw${c.maxDraws!==1?'s':''}/user · ${c.creditCost>0?'⭐ '+c.creditCost+' credits/spin':''} · ${c.active?'🟢 Active':'🔴 Paused'}</div>
+        <div class="ar-sub">${c.totalTickets.toLocaleString()} tickets · ${c.maxDraws} draw${c.maxDraws!==1?'s':''}/user · ${c.creditCost>0?'⭐ '+c.creditCost+' credits/spin':''} · ${c.status==='draft'?'📝 Draft':c.active?'🟢 Active':'🔴 Paused'}</div>
       </div>
       <div class="ar-actions">
         <button class="btn btn-ghost btn-sm" onclick="openEditModal('${c.id}')">✏️ Edit</button>
-        <button class="btn btn-ghost btn-sm" onclick="toggleComp('${c.id}')">${c.active?'Pause':'Activate'}</button>
+        ${c.status==='draft' ? `<button class="btn btn-gold btn-sm" onclick="publishComp('${c.id}')">🚀 Publish</button>` : `<button class="btn btn-ghost btn-sm" onclick="toggleComp('${c.id}')">${c.active?'Pause':'Activate'}</button>`}
         <button class="btn btn-danger btn-sm" onclick="deleteComp('${c.id}')">Delete</button>
       </div>
     </div>`).join('');
@@ -233,14 +236,23 @@ async function createCompetition(){
     maxDraws:document.getElementById('new-maxdraws').value,
     raffalLink:document.getElementById('new-link').value.trim()});
   if(d.error)return showAlert('create-alert','error',d.error);
-  showAlert('create-alert','success','✅ Created!');
+  showAlert('create-alert','success', publish ? '✅ Published!' : '💾 Saved as Draft!');
   document.getElementById('new-name').value='';
   document.getElementById('new-link').value='';
   await refresh();
 }
 
+
+async function publishComp(id) {
+  await apiPost({ action: 'setStatus', password: adminPass, id, status: 'active' });
+  await refresh();
+}
+
 async function toggleComp(id){
-  await apiPost({action:'toggleCompetition',password:adminPass,id});
+  const c = competitions.find(x => String(x.id) === String(id));
+  if (!c) return;
+  const newStatus = c.active ? 'paused' : 'active';
+  await apiPost({ action: 'setStatus', password: adminPass, id, status: newStatus });
   await refresh();
 }
 
