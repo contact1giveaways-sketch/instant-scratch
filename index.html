@@ -700,7 +700,15 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   document.getElementById('sec-' + name).classList.add('active');
   if (name === 'winners') loadWinners();
-  if (name === 'prizes') loadPrizeList();
+  if (name === 'prizes') {
+    setTimeout(() => {
+      if (db.competitions.length > 0) {
+        const el = document.getElementById('prizes-comp-filter');
+        if (el && !el.value) el.value = db.competitions[0].id;
+      }
+      loadPrizeList();
+    }, 50);
+  }
   if (name === 'participants') loadParticipants();
   if (name === 'credits') { populateFilters(); }
   if (name === 'admin' && adminPass) loadAdminPanel();
@@ -986,9 +994,12 @@ function populateFilters() {
   // Auto-load prize list with first competition
   if (db.competitions.length > 0) {
     const prizeFilter = document.getElementById('prizes-comp-filter');
-    if (prizeFilter && !prizeFilter.value) {
-      prizeFilter.value = db.competitions[0].id;
-      loadPrizeList();
+    if (prizeFilter) {
+      // Set value and force reload
+      setTimeout(() => {
+        prizeFilter.value = db.competitions[0].id;
+        if (prizeFilter.value) loadPrizeList();
+      }, 100);
     }
   }
 }
