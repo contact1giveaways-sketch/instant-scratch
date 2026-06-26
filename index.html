@@ -814,7 +814,11 @@ async function startPlay() {
   if (result.error) {
     document.getElementById('username-form').style.display = 'block';
     document.getElementById('scratch-area').style.display = 'none';
-    return showAlert('play-alert', 'error', result.error);
+    // Show friendly error message
+    const msg = result.error.includes('TypeError') || result.error.includes('function') 
+      ? 'Something went wrong. Please try again.' 
+      : result.error;
+    return showAlert('play-alert', 'error', msg);
   }
 }
 
@@ -825,6 +829,7 @@ function revealCard() {
   const btn = document.getElementById('spin-btn');
   btn.disabled = true;
   document.getElementById('spin-btn-text').textContent = '🎰 SPINNING...';
+  document.getElementById('play-alert').classList.remove('show');
 
   const ticket = drawResult.ticket;
   const digits = String(ticket).padStart(5, '0').split('');
