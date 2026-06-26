@@ -805,7 +805,17 @@ async function startPlay() {
     bar.innerHTML = `👤 <strong>${esc(username)}</strong> · ${status.drawsUsed} of ${status.maxDraws} draws used · <strong style="color:var(--green)">${status.remaining} remaining</strong>`;
   }
 
-  // Perform the draw immediately (backend)
+  // Show scratch area with loading state
+  document.getElementById('username-form').style.display = 'none';
+  document.getElementById('scratch-area').style.display = 'block';
+
+  // Show loading on spin button
+  const spinBtn = document.getElementById('spin-btn');
+  const spinBtnText = document.getElementById('spin-btn-text');
+  spinBtn.disabled = true;
+  spinBtnText.textContent = '⏳ Drawing your number...';
+
+  // Perform the draw on backend
   isDrawing = true;
   const result = await apiPost({ action: 'performDraw', compId: currentComp.id, username });
   isDrawing = false;
@@ -814,12 +824,15 @@ async function startPlay() {
   if (result.error) {
     document.getElementById('username-form').style.display = 'block';
     document.getElementById('scratch-area').style.display = 'none';
-    // Show friendly error message
-    const msg = result.error.includes('TypeError') || result.error.includes('function') 
-      ? 'Something went wrong. Please try again.' 
+    const msg = result.error.includes('TypeError') || result.error.includes('function')
+      ? 'Something went wrong. Please try again.'
       : result.error;
     return showAlert('play-alert', 'error', msg);
   }
+
+  // Draw ready - enable spin button
+  spinBtn.disabled = false;
+  spinBtnText.textContent = '🎰 SPIN NOW';
 }
 
 function revealCard() {
