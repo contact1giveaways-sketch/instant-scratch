@@ -786,12 +786,18 @@ async function startPlay() {
   if (!raw) return showAlert('play-alert', 'error', 'Please enter your Raffall username.');
 
   // Normalize: remove @ prefix, trim — case kept for display but server compares lowercase
-  const username = raw.replace(/^@+/g, '').trim();
+  const username = String(raw).replace(/^@+/g, '').trim();
   document.getElementById('play-username').value = username;
+  if (!username) return showAlert('play-alert', 'error', 'Please enter your Raffall username.');
 
   showAlert('play-alert', 'info', 'Checking your entry...');
   const status = await apiFetch({ action: 'checkUser', compId: currentComp.id, username });
-  if (status.error) return showAlert('play-alert', 'error', status.error);
+  if (status.error) {
+    const msg = status.error.includes('Too many requests') 
+      ? '⏳ Too many attempts. Please wait a moment and try again.'
+      : status.error;
+    return showAlert('play-alert', 'error', msg);
+  }
   if (!status.canDraw) return showAlert('play-alert', 'error', `You've used all ${currentComp.maxDraws} draw(s) for this competition.`);
 
   currentUsername = username;
@@ -824,9 +830,12 @@ async function startPlay() {
   if (result.error) {
     document.getElementById('username-form').style.display = 'block';
     document.getElementById('scratch-area').style.display = 'none';
-    const msg = result.error.includes('TypeError') || result.error.includes('function')
-      ? 'Something went wrong. Please try again.'
-      : result.error;
+    let msg = result.error;
+    if (result.error.includes('TypeError') || result.error.includes('function')) {
+      msg = 'Something went wrong. Please try again.';
+    } else if (result.error.includes('Too many requests')) {
+      msg = '⏳ Too many attempts. Please wait a moment and try again.';
+    }
     return showAlert('play-alert', 'error', msg);
   }
 
