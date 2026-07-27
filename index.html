@@ -716,7 +716,15 @@ function switchTab(name, btn) {
       loadPrizeList();
     }, 200);
   }
-  if (name === 'participants') loadParticipants();
+  if (name === 'participants') {
+    setTimeout(() => {
+      if (db.competitions.length > 0) {
+        const el = document.getElementById('participants-comp-filter');
+        if (el && !el.value) el.value = String(db.competitions[0].id);
+      }
+      loadParticipants();
+    }, 100);
+  }
   if (name === 'credits') { populateFilters(); }
   if (name === 'admin' && adminPass) loadAdminPanel();
 }
@@ -1177,7 +1185,13 @@ async function loadAdminDraws() {
 //  PARTICIPANTS
 // ════════════════════════════════════════════════════════
 async function loadParticipants() {
-  const compId = document.getElementById('participants-comp-filter').value;
+  let compId = document.getElementById('participants-comp-filter').value;
+  // Auto-select first competition if none selected
+  if (!compId && db.competitions.length > 0) {
+    compId = String(db.competitions[0].id);
+    const el = document.getElementById('participants-comp-filter');
+    if (el) el.value = compId;
+  }
   const d = await apiFetch({ action: 'getDraws', compId: compId || '' });
   const draws = (d.draws || []).slice().reverse();
   const statsEl = document.getElementById('participants-stats');
