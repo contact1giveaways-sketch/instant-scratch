@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Instant Prizes — Redesign Preview</title></head>
+<body>
+<script>
+(async()=>{
+  let html=await fetch('/index.html',{cache:'no-store'}).then(r=>r.text());
+  const premiumCSS=`<style>
+  :root{--gold:#C9962D!important;--gold-dim:#9E741D!important;--gold-glow:rgba(201,150,45,.15)!important;--black:#F7F4ED!important;--surface:#FFFFFF!important;--card:#FFFFFF!important;--border:#E7E0D5!important;--text:#101010!important;--muted:#706D67!important;--green:#177857!important;--red:#A74638!important;--blue:#3B6F9A!important}
+  html{background:#F7F4ED!important;scroll-padding-top:90px}
+  body{background:#F7F4ED!important;color:#101010!important;font-family:'DM Sans',sans-serif!important;padding-bottom:90px}
+  body::before{background:radial-gradient(circle at 15% 10%,rgba(201,150,45,.09),transparent 25%),radial-gradient(circle at 90% 35%,rgba(201,150,45,.06),transparent 28%)!important;opacity:1!important}
+  .wrap{max-width:1100px!important;padding:0 24px!important}
+  header{position:sticky;top:0;z-index:50;margin:0 -24px 30px!important;padding:16px 24px!important;background:rgba(247,244,237,.91)!important;backdrop-filter:blur(18px);border-bottom:1px solid #E7E0D5!important}
+  .logo-box{background:transparent!important;box-shadow:none!important;width:42px!important;height:42px!important;border-radius:12px!important;overflow:hidden!important;font-size:0!important}
+  .logo-box:before{content:'';display:block;width:100%;height:100%;background:url('/icon-192.png') center/cover no-repeat}
+  .logo-name{font-family:'Manrope','DM Sans',sans-serif!important;color:#101010!important;font-size:18px!important;letter-spacing:.12em!important;font-weight:800!important}
+  .logo-sub{color:#8B857C!important;font-size:9px!important;letter-spacing:.16em!important}
+  .tabs{position:sticky;top:75px;z-index:45;background:rgba(255,255,255,.84)!important;border:1px solid #E7E0D5!important;border-radius:999px!important;padding:5px!important;box-shadow:0 10px 35px rgba(40,30,15,.05)!important;margin-bottom:30px!important}
+  .tab{color:#78736B!important;font-weight:700!important;border-radius:999px!important;padding:11px 17px!important}
+  .tab.active{background:#101010!important;color:#F0D28E!important;box-shadow:none!important}
+  .card{background:#FFFFFF!important;border:1px solid #E7E0D5!important;border-radius:28px!important;padding:28px!important;box-shadow:0 18px 55px rgba(42,31,12,.055)!important}
+  .card-title{font-family:'Manrope','DM Sans',sans-serif!important;font-size:12px!important;text-transform:uppercase!important;letter-spacing:.16em!important;color:#C9962D!important;font-weight:800!important}
+  #play-select-view>.card:before{content:'INSTANT PRIZES';display:block;font-family:'Manrope','DM Sans',sans-serif;font-size:clamp(46px,8vw,88px);line-height:.88;letter-spacing:-.06em;font-weight:800;color:#101010;margin:3px 0 15px}
+  #play-select-view>.card:after{content:'One ticket. One instant chance. Real prizes.';display:block;color:#706D67;font-size:14px;margin-top:-4px;margin-bottom:28px;order:-1}
+  .comp-card{background:#F7F4ED!important;border:1px solid #E7E0D5!important;border-radius:22px!important;padding:22px!important;box-shadow:none!important}
+  .comp-card::before{height:0!important}
+  .comp-card:hover{border-color:#C9962D!important;transform:translateY(-2px)!important;box-shadow:0 14px 34px rgba(42,31,12,.07)!important}
+  .comp-badge{background:#EEF8F3!important;border-color:#CFE8DC!important;color:#177857!important;border-radius:999px!important;padding:5px 10px!important}
+  .comp-name{font-family:'Manrope','DM Sans',sans-serif!important;color:#101010!important;font-size:24px!important;letter-spacing:-.035em!important;font-weight:800!important}
+  .comp-meta{color:#817B72!important;font-size:12px!important;margin-top:10px!important}
+  .comp-meta a{color:#9A711C!important;font-weight:800!important}
+  .back-btn{color:#706D67!important;font-weight:700!important}
+  #play-draw-view>.card{background:#101010!important;border-color:#1F1F1F!important;color:#FFF!important;border-radius:32px!important;box-shadow:0 28px 75px rgba(0,0,0,.13)!important}
+  #play-draw-view #comp-info-bar>div:first-child{font-family:'Manrope','DM Sans',sans-serif!important;color:#F0D28E!important;letter-spacing:-.03em!important;font-size:26px!important;font-weight:800!important}
+  #play-draw-view label{color:#A59F95!important}
+  #play-draw-view input{background:#181818!important;border-color:#2B2B2B!important;color:#FFF!important;border-radius:14px!important}
+  .btn{border-radius:999px!important;font-weight:800!important;padding:13px 20px!important}
+  .btn-gold{background:#F0D28E!important;color:#111!important;box-shadow:none!important}
+  .btn-ghost{border-color:#DAD3C7!important;color:#5E5952!important;background:#FFF!important}
+  #play-draw-view .btn-ghost{background:#181818!important;border-color:#333!important;color:#EEE!important}
+  .scratch-headline{font-family:'Manrope','DM Sans',sans-serif!important;font-size:46px!important;letter-spacing:-.055em!important;background:none!important;-webkit-text-fill-color:#FFF!important;color:#FFF!important;font-weight:800!important}
+  .scratch-sub{color:#918B82!important;text-transform:none!important;letter-spacing:0!important;font-size:13px!important}
+  .slot-machine{background:linear-gradient(145deg,#181818,#0C0C0C)!important;border:1px solid #2B2B2B!important;border-radius:26px!important;box-shadow:inset 0 0 0 1px rgba(240,210,142,.04),0 18px 45px rgba(0,0,0,.18)!important}
+  .slot-label{color:#A59F95!important}
+  .slot-display{background:#080808!important;border-color:#28231A!important;border-radius:18px!important}
+  .slot-digit{font-family:'Manrope','DM Sans',sans-serif!important;color:#F2D38F!important;font-weight:800!important}
+  .spin-btn{font-family:'Manrope','DM Sans',sans-serif!important;background:#F2D38F!important;color:#111!important;letter-spacing:.06em!important;border-radius:999px!important;box-shadow:none!important;font-size:18px!important}
+  .win-reveal{background:rgba(242,211,143,.08)!important;border-color:rgba(242,211,143,.25)!important;border-radius:22px!important}
+  .no-prize-reveal{background:#181818!important;border-color:#292929!important;border-radius:22px!important}
+  .list-item,.admin-row{background:#F7F4ED!important;border:1px solid #E7E0D5!important;border-radius:18px!important}
+  .li-avatar{background:#101010!important;color:#F0D28E!important}
+  .li-name,.ar-name{color:#101010!important}
+  .li-sub,.ar-sub{color:#817B72!important}
+  .stat-box{background:#F7F4ED!important;border:1px solid #E7E0D5!important;border-radius:18px!important}
+  .stat-val{font-family:'Manrope','DM Sans',sans-serif!important;color:#C9962D!important;font-weight:800!important}
+  .stat-lbl{color:#817B72!important}
+  select,input{background:#F7F4ED!important;border:1px solid #E7E0D5!important;color:#101010!important;border-radius:14px!important}
+  .prizes-table th{color:#817B72!important;border-color:#E7E0D5!important}.prizes-table td{border-color:#EEE8DF!important;color:#27231F!important}.prize-amount{color:#9A711C!important}
+  .refresh-btn{background:#101010!important;color:#F0D28E!important;border-color:#282828!important}
+  .premium-mobilebar{display:none}
+  @media(max-width:620px){
+    .wrap{padding:0 12px!important}.wrap header{margin:0 -12px 18px!important;padding:13px 14px!important}.logo-name{font-size:15px!important}.logo-box{width:36px!important;height:36px!important}
+    .tabs{top:63px!important;margin:0 0 18px!important;border-radius:18px!important;overflow-x:auto!important}.tab{padding:9px 13px!important;font-size:11px!important}
+    .card{padding:20px!important;border-radius:24px!important}#play-select-view>.card:before{font-size:50px!important}.comp-name{font-size:21px!important}
+    #play-draw-view>.card{border-radius:26px!important}.scratch-headline{font-size:38px!important}.slot-machine{border-radius:22px!important}
+    .premium-mobilebar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:12px;right:12px;z-index:100;background:rgba(15,15,15,.96);backdrop-filter:blur(18px);border:1px solid #2A2A2A;border-radius:19px;padding:8px;box-shadow:0 18px 50px rgba(0,0,0,.25);color:#FFF}
+    .premium-mobilebar button{background:none;border:0;color:#EDEDED;padding:6px 2px;font:800 9px 'DM Sans';display:flex;flex-direction:column;align-items:center;gap:3px}.premium-mobilebar b{font-size:18px;line-height:20px;color:#FFF}.premium-mobilebar button.active b{color:#F2D38F}.premium-mobilebar button.active{color:#F2D38F}
+    body{padding-bottom:98px!important}
+  }
+  </style>`;
+  const extraHTML=`<div class="premium-mobilebar" id="premium-mobilebar"><button class="active" onclick="premiumGo('play',this)"><b>⌁</b>Play</button><button onclick="premiumGo('winners',this)"><b>★</b>Winners</button><button onclick="premiumGo('prizes',this)"><b>◇</b>Prizes</button><button onclick="premiumGo('credits',this)"><b>✦</b>Credits</button></div><script>function premiumGo(name,btn){const map={play:0,winners:1,prizes:2,credits:4};const tabs=document.querySelectorAll('.tabs .tab');if(tabs[map[name]])switchTab(name,tabs[map[name]]);document.querySelectorAll('.premium-mobilebar button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');window.scrollTo({top:0,behavior:'smooth'})}<\/script>`;
+  html=html.replace('</head>',`<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">${premiumCSS}</head>`).replace('</body>',extraHTML+'</body>');
+  document.open();document.write(html);document.close();
+})().catch(e=>{document.body.innerHTML='<p style="font-family:sans-serif;padding:30px">Preview could not load.</p>'});
+</script>
+</body></html>
