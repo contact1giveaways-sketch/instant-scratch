@@ -12,8 +12,8 @@
   body::before{background:radial-gradient(circle at 15% 10%,rgba(201,150,45,.09),transparent 25%),radial-gradient(circle at 90% 35%,rgba(201,150,45,.06),transparent 28%)!important;opacity:1!important}
   .wrap{max-width:1100px!important;padding:0 24px!important}
   header{position:sticky;top:0;z-index:50;margin:0 -24px 30px!important;padding:16px 24px!important;background:rgba(247,244,237,.91)!important;backdrop-filter:blur(18px);border-bottom:1px solid #E7E0D5!important}
-  .logo-box{background:transparent!important;box-shadow:none!important;width:42px!important;height:42px!important;border-radius:12px!important;overflow:hidden!important;font-size:0!important}
-  .logo-box:before{content:'';display:block;width:100%;height:100%;background:url('/icon-192.png') center/cover no-repeat}
+  .logo-box{background:transparent!important;box-shadow:none!important;width:48px!important;height:48px!important;border-radius:12px!important;overflow:visible!important;font-size:0!important;display:grid!important;place-items:center!important;flex:0 0 48px!important}
+  .logo-box:before{content:'';display:block;width:44px;height:44px;background-image:url('/icon-192.png');background-position:center;background-size:contain;background-repeat:no-repeat}
   .logo-name{font-family:'Manrope','DM Sans',sans-serif!important;color:#101010!important;font-size:18px!important;letter-spacing:.12em!important;font-weight:800!important}
   .logo-sub{color:#8B857C!important;font-size:9px!important;letter-spacing:.16em!important}
   .tabs{position:sticky;top:75px;z-index:45;background:rgba(255,255,255,.84)!important;border:1px solid #E7E0D5!important;border-radius:999px!important;padding:5px!important;box-shadow:0 10px 35px rgba(40,30,15,.05)!important;margin-bottom:30px!important}
@@ -60,7 +60,7 @@
   .refresh-btn{background:#101010!important;color:#F0D28E!important;border-color:#282828!important}
   .premium-mobilebar{display:none}
   @media(max-width:620px){
-    .wrap{padding:0 12px!important}.wrap header{margin:0 -12px 18px!important;padding:13px 14px!important}.logo-name{font-size:15px!important}.logo-box{width:36px!important;height:36px!important}
+    .wrap{padding:0 12px!important}.wrap header{margin:0 -12px 18px!important;padding:13px 14px!important}.logo-name{font-size:15px!important}.logo-box{width:42px!important;height:42px!important;flex-basis:42px!important}.logo-box:before{width:39px!important;height:39px!important}
     .tabs{top:63px!important;margin:0 0 18px!important;border-radius:18px!important;overflow-x:auto!important}.tab{padding:9px 13px!important;font-size:11px!important}
     .card{padding:20px!important;border-radius:24px!important}#play-select-view>.card:before{font-size:50px!important}.comp-name{font-size:21px!important}
     #play-draw-view>.card{border-radius:26px!important}.scratch-headline{font-size:38px!important}.slot-machine{border-radius:22px!important}
