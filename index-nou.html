@@ -361,6 +361,14 @@ footer{padding:10px 0 42px;color:#8b867d;font-size:11px}
 /* ═══ CONFIG ═══════════════════════════════════════════════════ */
 const SUPABASE_URL  = 'https://bgbsfufelueubbnxsdsy.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnYnNmdWZlbHVldWJibnhzZHN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNzgwNDksImV4cCI6MjEwNjg1NDA0OX0.CU6Ka5jWd6xeh-jdlNaH8_IR3xGWcX3-oLdBsaWiR8s';
+/* Venit din linkul de confirmare din email? Citim adresa înainte ca
+   Supabase s-o curețe. Omul nu a apucat să se logheze: îl trimitem la
+   login, cu emailul completat, în loc să-i cerem direct username-ul. */
+const LINK_HASH = new URLSearchParams(location.hash.slice(1));
+const FROM_CONFIRM = LINK_HASH.get('type') === 'signup';
+const LINK_ERROR = LINK_HASH.get('error_description') || new URLSearchParams(location.search).get('error_description');
+let handlingConfirm = FROM_CONFIRM;
+
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const RAFFALL = 'https://raffall.com/giveaways_community';
 
@@ -401,7 +409,7 @@ function errText(e){
   for(const k in ERR) if(m.includes(k)) return ERR[k];
   if(/Failed to fetch|NetworkError/i.test(m)) return 'Connection problem. Check your internet and try again.';
   if(/JWT|expired/i.test(m)) return 'Your session expired. Please sign in again.';
-  return 'Something went wrong. Please try again.';
+  return 'Something went wrong. Please try again. <small style="opacity:.7">(' + esc(m) + ')</small>';
 }
 
 /* ═══ FORMAT ═══════════════════════════════════════════════════ */
@@ -780,6 +788,7 @@ sb.auth.onAuthStateChange(async (event) => {
     $('newpass-card').style.display = 'block';
     return;
   }
+  if(handlingConfirm) return;
   if(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED'){
     // amânat: nu apelăm Supabase direct din callback
     setTimeout(async () => {
@@ -794,6 +803,29 @@ sb.auth.onAuthStateChange(async (event) => {
   }
 });
 (async () => {
+  if(FROM_CONFIRM){
+    const { data } = await sb.auth.getSession();          // așteaptă procesarea linkului
+    const email = data.session ? data.session.user.email : '';
+    await sb.auth.signOut({ scope: 'local' });             // nu rămâne logat din link
+    history.replaceState(null, '', location.pathname);
+    handlingConfirm = false;
+    await refreshUser();
+    await loadComps();
+    authMode('in');
+    if(email) $('a-email').value = email;
+    showTab('account');
+    showAlert('auth-alert','success','✅ Your email is confirmed. Sign in to finish setting up your account.');
+    $('a-pass').focus();
+    return;
+  }
+  if(LINK_ERROR){
+    history.replaceState(null, '', location.pathname);
+    await refreshUser();
+    await loadComps();
+    showTab('account');
+    showAlert('auth-alert','error','This link has expired or was already used. Sign in — or, if you never finished signing up, create your account again.');
+    return;
+  }
   await refreshUser();
   await loadComps();
   if(session && !me) showTab('account');
