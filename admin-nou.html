@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin — Instant Prizes</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--gold:#F5C842;--gold-dim:#C49A1A;--black:#080808;--surface:#111;--card:#161616;--border:rgba(255,255,255,0.08);--text:#E8E8E8;--muted:#7a7a7a;--green:#22C55E;--red:#EF4444;--blue:#3B82F6;--orange:#F59E0B}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding:20px}
+.wrap{max-width:860px;margin:0 auto}
+header{padding:20px 0 16px;border-bottom:1px solid var(--border);margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-box{width:40px;height:40px;background:var(--gold);border-radius:10px;display:grid;place-items:center;font-size:20px}
+.logo-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--gold)}
+.logo-sub{font-size:11px;color:var(--muted)}
+.hdr-links{display:flex;gap:14px;align-items:center;font-size:13px}
+.hdr-links a{color:var(--muted);text-decoration:none}
+.hdr-links a:hover{color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:var(--gold);margin-bottom:14px}
+label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin:12px 0 6px}
+input,select,textarea{width:100%;padding:11px 13px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:rgba(245,200,66,.5)}
+textarea{min-height:140px;resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.note{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.btn{padding:11px 20px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-gold{background:var(--gold);color:#000}
+.btn-gold:hover:not(:disabled){background:#f7d155}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover:not(:disabled){border-color:rgba(245,200,66,.4);color:var(--gold)}
+.btn-danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-full{width:100%;margin-top:14px}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn-row .btn{flex:1}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.alert{padding:11px 14px;border-radius:10px;font-size:13px;margin-bottom:14px;display:none;line-height:1.5}
+.alert.show{display:block}
+.alert-success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green)}
+.alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.alert-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:#7fb0ff}
+.alert-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--orange)}
+#global-alert{position:sticky;top:10px;z-index:20}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:5px;margin-bottom:22px;overflow-x:auto}
+.tab{flex:0 0 auto;padding:10px 15px;background:transparent;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;border-radius:10px;cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--card);color:var(--gold)}
+.section{display:none}
+.section.active{display:block}
+.row{display:flex;align-items:center;gap:10px;padding:13px 15px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;flex-wrap:wrap}
+.row.editing{border-color:rgba(245,200,66,.5)}
+.row-main{flex:1;min-width:200px}
+.row-name{font-weight:600;font-size:14px}
+.row-sub{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin-right:4px}
+.pill-active{background:rgba(34,197,94,.12);color:var(--green)}
+.pill-draft{background:rgba(255,255,255,.08);color:#bbb}
+.pill-paused{background:rgba(245,158,11,.12);color:var(--orange)}
+.pill-closed{background:rgba(239,68,68,.12);color:var(--red)}
+.pill-open{background:rgba(59,130,246,.12);color:#7fb0ff}
+.pill-buyers{background:rgba(245,200,66,.12);color:var(--gold)}
+.pill-won{background:rgba(34,197,94,.12);color:var(--green)}
+.table-wrap{overflow-x:auto;max-height:440px;overflow-y:auto;border:1px solid var(--border);border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;color:var(--muted);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.04);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+.empty{text-align:center;padding:28px;color:var(--muted);font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.stat b{display:block;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;color:var(--gold);line-height:1.1}
+.stat span{font-size:12px;color:var(--muted)}
+.sub-head{font-size:13px;font-weight:700;color:var(--text);margin:18px 0 10px;padding-top:16px;border-top:1px solid var(--border)}
+.preview-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.preview-list span{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-size:12px}
+.toggle-line{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:14px}
+.toggle-line input{width:18px;height:18px}
+.ledger{margin-top:10px;width:100%}
+@media(max-width:600px){.grid-2,.grid-3{grid-template-columns:1fr}body{padding:12px}.card{padding:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <div class="logo-box">🎰</div>
+      <div><div class="logo-name">Admin Panel</div><div class="logo-sub">Instant Prizes</div></div>
+    </div>
+    <div class="hdr-links">
+      <a href="#" id="logout-link" style="display:none" onclick="doLogout();return false">Ieși din cont</a>
+      <a href="/">← Site</a>
+    </div>
+  </header>
+
+  <!-- ═══ LOGIN ═══ -->
+  <div id="login-view" class="card">
+    <div class="card-title">🔐 Admin</div>
+    <div id="login-alert" class="alert"></div>
+    <label for="login-email">Email</label>
+    <input type="email" id="login-email" autocomplete="username">
+    <label for="login-pass">Parolă Supabase</label>
+    <input type="password" id="login-pass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-gold btn-full" onclick="doLogin()">Intră</button>
+  </div>
+
+  <!-- ═══ PANOU ═══ -->
+  <div id="admin-view" style="display:none">
+    <div id="global-alert" class="alert"></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="comps"   onclick="showTab('comps')">🏆 Competiții</button>
+      <button class="tab"        data-tab="prizes"  onclick="showTab('prizes')">💰 Premii</button>
+      <button class="tab"        data-tab="buyers"  onclick="showTab('buyers')">🎟️ Cumpărători</button>
+      <button class="tab"        data-tab="players" onclick="showTab('players')">👤 Jucători</button>
+      <button class="tab"        data-tab="draws"   onclick="showTab('draws')">📋 Extrageri</button>
+    </div>
+
+    <!-- ─────────── COMPETIȚII ─────────── -->
+    <section class="section active" id="sec-comps">
+      <div class="card">
+        <div class="card-title" id="comp-form-title">Competiție nouă</div>
+        <input type="hidden" id="c-id">
+        <label for="c-name">Nume</label>
+        <input type="text" id="c-name" placeholder="ex: Instant Prizes — £75,000 Cash">
+        <div class="grid-2">
+          <div>
+            <label for="c-access">Cine joacă gratuit</label>
+            <select id="c-access" onchange="syncAccessFields()">
+              <option value="buyers">Doar cumpărătorii (lista din tabul Cumpărători)</option>
+              <option value="open">Oricine își face cont (promoție)</option>
+            </select>
+          </div>
+          <div>
+            <label for="c-status">Stare</label>
+            <select id="c-status">
+              <option value="draft">Ciornă — nu apare pe site</option>
+              <option value="active">Activă — se poate juca</option>
+              <option value="paused">Pe pauză — se vede, nu se joacă</option>
+              <option value="closed">Încheiată</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div>
+            <label for="c-tickets">Total bilete</label>
+            <input type="number" id="c-tickets" value="10000" min="1" max="99999">
+          </div>
+          <div id="free-spins-wrap">
+            <label for="c-free">Spin-uri gratuite / cont</label>
+            <input type="number" id="c-free" value="1" min="0">
+          </div>
+          <div>
+            <label for="c-cost">Cost spin în credite</label>
+            <input type="number" id="c-cost" value="0" min="0">
+          </div>
+        </div>
+        <div class="note" id="access-note"></div>
+        <div class="grid-2">
+          <div>
+            <label for="c-maxcredit">Maxim spin-uri pe credite / cont</label>
+            <input type="number" id="c-maxcredit" value="0" min="0">
+            <div class="note">0 = fără limită. Contează doar dacă costul e peste 0.</div>
+          </div>
+          <div>
+            <label for="c-link">Link Raffall</label>
+            <input type="text" id="c-link" placeholder="https://raffall.com/...">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-gold" id="c-save" onclick="saveComp()">✅ Creează competiția</button>
+          <button class="btn btn-ghost" id="c-cancel" style="display:none" onclick="resetCompForm()">Renunță</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Toate competițiile</div>
+        <div id="comp-list"></div>
+      </div>
+    </section>
+
+    <!-- ─────────── PREMII ─────────── -->
+    <section class="section" id="sec-prizes">
+      <div class="card">
+        <label for="p-comp">Competiția</label>
+        <select id="p-comp" onchange="renderPrizes()"></select>
+        <div class="stats" id="p-stats" style="margin-top:14px"></div>
+
+        <div class="sub-head">⚡ Generator automat</div>
+        <div class="grid-3">
+          <div><label for="g-budget">Buget total</label><input type="number" id="g-budget" min="0" step="0.01" placeholder="ex: 500" oninput="previewGen()"></div>
+          <div><label for="g-count">Număr de premii</label><input type="number" id="g-count" min="1" placeholder="ex: 50" oninput="previewGen()"></div>
+          <div>
+            <label for="g-kind">Tip</label>
+            <select id="g-kind" onchange="previewGen()">
+              <option value="cash">Bani (£)</option>
+              <option value="credits">Credite</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div>
+            <label for="g-dist">Distribuție</label>
+            <select id="g-dist" onchange="syncGenFields();previewGen()">
+              <option value="pyramid">Piramidă — puține premii mari, multe mici</option>
+              <option value="equal">Egale</option>
+            </select>
+          </div>
+          <div id="g-ratio-wrap">
+            <label for="g-ratio">Cel mai mare premiu = de câte ori cel mai mic</label>
+            <input type="number" id="g-ratio" value="20" min="1" oninput="previewGen()">
+          </div>
+        </div>
+        <div class="note" id="g-summary"></div>
+        <div class="preview-list" id="g-preview"></div>
+        <button class="btn btn-gold btn-full" id="g-btn" onclick="runGenerator()" disabled>⚡ Pune premiile pe bilete aleatorii</button>
+
+        <div class="sub-head">➕ Premiu manual</div>
+        <div class="grid-3">
+          <div><label for="m-ticket">Bilet</label><input type="number" id="m-ticket" min="1" placeholder="ex: 547"></div>
+          <div>
+            <label for="m-kind">Tip</label>
+            <select id="m-kind"><option value="cash">Bani (£)</option><option value="credits">Credite</option></select>
+          </div>
+          <div><label for="m-amount">Valoare</label><input type="number" id="m-amount" min="0" step="0.01" placeholder="ex: 25"></div>
+        </div>
+        <label for="m-label">Descriere (opțional)</label>
+        <input type="text" id="m-label" placeholder="ex: AirPods Pro — lasă gol pentru bani/credite">
+        <button class="btn btn-ghost btn-full" onclick="addManualPrize()">➕ Adaugă premiul</button>
+
+        <div class="sub-head">Lista de premii</div>
+        <div id="p-list"></div>
+      </div>
+    </section>
+
+    <!-- ─────────── CUMPĂRĂTORI ─────────── -->
+    <section class="section" id="sec-buyers">
+      <div class="card">
+        <label for="b-comp">Competiția</label>
+        <select id="b-comp" onchange="renderBuyers()"></select>
+        <div class="note" id="b-note"></div>
+
+        <div class="sub-head">Lipește lista de pe Raffall</div>
+        <textarea id="b-input" placeholder="Un username pe rând. Opțional: username | spin-uri&#10;&#10;john_doe&#10;jane99 | 3&#10;@peppajack"></textarea>
+        <div class="note">Dacă un username apare de mai multe ori, spin-urile se adună. Fără număr = 1 spin. „@” din față se ignoră.</div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="saveBuyers('add')">➕ Adaugă la listă</button>
+          <button class="btn btn-ghost" onclick="saveBuyers('replace')">♻️ Înlocuiește toată lista</button>
+        </div>
+
+        <div class="sub-head">Lista curentă</div>
+        <div id="b-list"></div>
+      </div>
+    </section>
+
+    <!-- ─────────── JUCĂTORI ─────────── -->
+    <section class="section" id="sec-players">
+      <div class="card">
+        <div class="stats" id="pl-stats"></div>
+        <input type="search" id="pl-search" placeholder="🔍 Caută username…" oninput="renderPlayers()">
+        <div id="pl-list" style="margin-top:12px"></div>
+      </div>
+    </section>
+
+    <!-- ─────────── EXTRAGERI ─────────── -->
+    <section class="section" id="sec-draws">
+      <div class="card">
+        <label for="d-comp">Competiția</label>
+        <select id="d-comp" onchange="renderDraws()"></select>
+        <div class="stats" id="d-stats" style="margin-top:14px"></div>
+        <div id="d-list"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ═══ CONFIG ═══════════════════════════════════════════════════ */
+const SUPABASE_URL  = 'https://bgbsfufelueubbnxsdsy.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJnYnNmdWZlbHVldWJibnhzZHN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNzgwNDksImV4cCI6MjEwNjg1NDA0OX0.CU6Ka5jWd6xeh-jdlNaH8_IR3xGWcX3-oLdBsaWiR8s';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const nkey = s => String(s ?? '').trim().replace(/^@+/, '').trim().toLowerCase();
+
+let comps = [], prizes = [], players = [];
+let genPlan = null;
+
+/* ═══ MESAJE ═══════════════════════════════════════════════════ */
+function showAlert(id, type, msg){
+  const el = $(id); if(!el) return;
+  el.className = 'alert alert-' + type + ' show';
+  el.innerHTML = msg;
+  clearTimeout(el._t);
+  if(type === 'success') el._t = setTimeout(() => el.classList.remove('show'), 4000);
+}
+const flash = (type, msg) => showAlert('global-alert', type, msg);
+
+const ERRORS = {
+  not_admin: 'Contul ăsta nu e admin.',
+  username_taken: 'Username-ul e deja folosit de alt cont.',
+  invalid_username: 'Username invalid (2–40 caractere).',
+  no_profile: 'Contul jucătorului nu există.',
+  zero_delta: 'Scrie un număr diferit de 0.'
+};
+function errMsg(e){
+  const m = (e && (e.message || e.details)) || String(e);
+  for(const k in ERRORS) if(m.includes(k)) return ERRORS[k];
+  if(e && e.code === '23505') return 'Există deja un premiu pe biletul ăsta.';
+  if(/check constraint.*credits/i.test(m)) return 'Soldul nu poate scădea sub 0.';
+  if(/JWT|expired/i.test(m)) return 'Sesiunea a expirat. Reîncarcă pagina și intră din nou.';
+  if(/Failed to fetch|NetworkError/i.test(m)) return 'Nu am conexiune cu Supabase.';
+  return 'Eroare: ' + esc(m);
+}
+
+/* ═══ FORMATARE ════════════════════════════════════════════════ */
+const fmtDate = iso => iso ? new Date(iso).toLocaleString('ro-RO', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+function fmtPrize(p){
+  if(!p) return '';
+  if(p.label) return esc(p.label);
+  return p.kind === 'credits' ? `⭐ ${Number(p.amount).toLocaleString('en-GB')} credite` : `£${Number(p.amount).toFixed(2).replace(/\.00$/, '')}`;
+}
+const STATUS = { draft:['Ciornă','pill-draft'], active:['Activă','pill-active'], paused:['Pe pauză','pill-paused'], closed:['Încheiată','pill-closed'] };
+const statusPill = s => `<span class="pill ${STATUS[s][1]}">${STATUS[s][0]}</span>`;
+const accessPill = a => a === 'open' ? '<span class="pill pill-open">Deschisă</span>' : '<span class="pill pill-buyers">Cumpărători</span>';
+
+/* ═══ LOGIN ════════════════════════════════════════════════════ */
+async function enterIfAdmin(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session) return false;
+  const { data, error } = await sb.from('admins').select('user_id').eq('user_id', session.user.id).maybeSingle();
+  if(error || !data){
+    await sb.auth.signOut();
+    showAlert('login-alert','error','Contul ăsta nu are drept de admin.');
+    return false;
+  }
+  $('login-view').style.display = 'none';
+  $('admin-view').style.display = 'block';
+  $('logout-link').style.display = 'inline';
+  await loadAll();
+  showTab(sessionStorage.getItem('ip_admin_tab') || 'comps');
+  return true;
+}
+async function doLogin(){
+  const email = $('login-email').value.trim(), password = $('login-pass').value;
+  if(!email || !password) return showAlert('login-alert','error','Completează emailul și parola.');
+  showAlert('login-alert','info','Se verifică…');
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error) return showAlert('login-alert','error', /invalid/i.test(error.message) ? 'Email sau parolă greșită.' : esc(error.message));
+  $('login-pass').value = '';
+  $('login-alert').classList.remove('show');
+  await enterIfAdmin();
+}
+async function doLogout(){ await sb.auth.signOut(); location.reload(); }
+
+/* ═══ TABURI ═══════════════════════════════════════════════════ */
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'sec-' + name));
+  sessionStorage.setItem('ip_admin_tab', name);
+  if(name === 'prizes')  renderPrizes();
+  if(name === 'buyers')  renderBuyers();
+  if(name === 'players') loadPlayers();
+  if(name === 'draws')   renderDraws();
+}
+
+/* ═══ ÎNCĂRCARE ════════════════════════════════════════════════ */
+async function loadComps(){
+  const { data, error } = await sb.from('instant_competitions').select('*').order('created_at', { ascending:false });
+  if(error) return flash('error', errMsg(error));
+  comps = data;
+}
+async function loadPrizeSummary(){
+  const { data, error } = await sb.from('instant_prizes').select('id,competition_id,ticket,kind,amount,label,won_by,won_at').order('ticket');
+  if(error) return flash('error', errMsg(error));
+  prizes = data;
+}
+async function loadAll(){
+  await Promise.all([loadComps(), loadPrizeSummary()]);
+  renderComps();
+  fillCompSelects();
+}
+function fillCompSelects(){
+  const opts = comps.map(c => `<option value="${c.id}">${esc(c.name)} — ${STATUS[c.status][0]}</option>`).join('');
+  ['p-comp','b-comp','d-comp'].forEach(id => {
+    const el = $(id), prev = el.value;
+    el.innerHTML = opts || '<option value="">Nicio competiție încă</option>';
+    if(prev && comps.some(c => String(c.id) === prev)) el.value = prev;
+  });
+}
+const compById = id => comps.find(c => String(c.id) === String(id));
+
+/* ═══ COMPETIȚII ═══════════════════════════════════════════════ */
+function syncAccessFields(){
+  const open = $('c-access').value === 'open';
+  $('free-spins-wrap').style.opacity = open ? '1' : '.4';
+  $('c-free').disabled = !open;
+  $('access-note').textContent = open
+    ? 'Orice cont primește numărul de spin-uri gratuite de mai sus. Cineva cu mai multe emailuri le primește de mai multe ori — pune premii mici la promoții.'
+    : 'Spin-urile gratuite le iau doar username-urile din tabul Cumpărători, câte spin-uri ai trecut acolo pentru fiecare.';
+}
+function resetCompForm(){
+  $('c-id').value = '';
+  $('c-name').value = ''; $('c-access').value = 'buyers'; $('c-status').value = 'draft';
+  $('c-tickets').value = 10000; $('c-free').value = 1; $('c-cost').value = 0; $('c-maxcredit').value = 0; $('c-link').value = '';
+  $('comp-form-title').textContent = 'Competiție nouă';
+  $('c-save').textContent = '✅ Creează competiția';
+  $('c-cancel').style.display = 'none';
+  syncAccessFields();
+  renderComps();
+}
+function editComp(id){
+  const c = compById(id); if(!c) return;
+  $('c-id').value = c.id;
+  $('c-name').value = c.name; $('c-access').value = c.access; $('c-status').value = c.status;
+  $('c-tickets').value = c.total_tickets; $('c-free').value = c.free_spins; $('c-cost').value = c.credit_cost;
+  $('c-maxcredit').value = c.max_credit_spins; $('c-link').value = c.raffall_link || '';
+  $('comp-form-title').textContent = 'Editează: ' + c.name;
+  $('c-save').textContent = '💾 Salvează modificările';
+  $('c-cancel').style.display = 'inline-flex';
+  syncAccessFields();
+  renderComps();
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+async function saveComp(){
+  const id = $('c-id').value;
+  const row = {
+    name: $('c-name').value.trim(),
+    access: $('c-access').value,
+    status: $('c-status').value,
+    total_tickets: parseInt($('c-tickets').value) || 0,
+    free_spins: Math.max(parseInt($('c-free').value) || 0, 0),
+    credit_cost: Math.max(parseInt($('c-cost').value) || 0, 0),
+    max_credit_spins: Math.max(parseInt($('c-maxcredit').value) || 0, 0),
+    raffall_link: $('c-link').value.trim() || null
+  };
+  if(!row.name) return flash('error','Scrie numele competiției.');
+  if(row.total_tickets < 1 || row.total_tickets > 99999) return flash('error','Totalul de bilete trebuie să fie între 1 și 99.999.');
+  if(id){
+    const c = compById(id);
+    const maxPrizeTicket = Math.max(0, ...prizes.filter(p => String(p.competition_id) === String(id)).map(p => p.ticket));
+    if(row.total_tickets < maxPrizeTicket) return flash('error', `Există un premiu pe biletul ${maxPrizeTicket}. Totalul nu poate fi mai mic.`);
+    const { error } = await sb.from('instant_competitions').update(row).eq('id', id);
+    if(error) return flash('error', errMsg(error));
+    flash('success','✅ Salvat.');
+  } else {
+    const { error } = await sb.from('instant_competitions').insert(row);
+    if(error) return flash('error', errMsg(error));
+    flash('success', row.status === 'draft' ? '📝 Creată ca ciornă. Adaugă premiile, apoi activeaz-o.' : '✅ Competiție creată.');
+  }
+  await loadAll();
+  resetCompForm();
+}
+async function setStatus(id, status){
+  const { error } = await sb.from('instant_competitions').update({ status }).eq('id', id);
+  if(error) return flash('error', errMsg(error));
+  flash('success', `Stare schimbată: ${STATUS[status][0]}.`);
+  await loadAll();
+}
+async function deleteComp(id){
+  const c = compById(id); if(!c) return;
+  const { count } = await sb.from('instant_draws').select('id', { count:'exact', head:true }).eq('competition_id', id);
+  const msg = count
+    ? `„${c.name}” are deja ${count} extrageri. Dacă o ștergi, dispar și extragerile și premiile ei.\n\nMai bine o treci pe „Încheiată”. Ștergi totuși?`
+    : `Ștergi definitiv „${c.name}” și premiile ei?`;
+  if(!confirm(msg)) return;
+  const { error } = await sb.from('instant_competitions').delete().eq('id', id);
+  if(error) return flash('error', errMsg(error));
+  if($('c-id').value === String(id)) resetCompForm();
+  flash('success','🗑️ Ștearsă.');
+  await loadAll();
+}
+function renderComps(){
+  const wrap = $('comp-list');
+  if(!comps.length){ wrap.innerHTML = '<div class="empty">Nicio competiție încă. Creează prima mai sus.</div>'; return; }
+  wrap.innerHTML = comps.map(c => {
+    const ps = prizes.filter(p => p.competition_id === c.id);
+    const won = ps.filter(p => p.won_by).length;
+    const parts = [
+      `${c.total_tickets.toLocaleString('en-GB')} bilete`,
+      `${ps.length} premii (${won} câștigate)`,
+      c.access === 'open' ? `${c.free_spins} spin gratuit/cont` : 'spin-uri după listă',
+      c.credit_cost > 0 ? `${c.credit_cost} credite/spin` + (c.max_credit_spins ? `, max ${c.max_credit_spins}` : '') : 'fără credite'
+    ];
+    const actions = [];
+    if(c.status !== 'active') actions.push(`<button class="btn btn-gold btn-sm" onclick="setStatus(${c.id},'active')">▶ Activează</button>`);
+    if(c.status === 'active') actions.push(`<button class="btn btn-ghost btn-sm" onclick="setStatus(${c.id},'paused')">⏸ Pauză</button>`);
+    if(c.status !== 'closed' && c.status !== 'draft') actions.push(`<button class="btn btn-ghost btn-sm" onclick="setStatus(${c.id},'closed')">🏁 Încheie</button>`);
+    actions.push(`<button class="btn btn-ghost btn-sm" title="Editează" onclick="editComp(${c.id})">✏️</button>`);
+    actions.push(`<button class="btn btn-danger btn-sm" title="Șterge" onclick="deleteComp(${c.id})">🗑️</button>`);
+    return `<div class="row${$('c-id').value === String(c.id) ? ' editing' : ''}">
+      <div class="row-main">
+        <div class="row-name">${esc(c.name)}</div>
+        <div class="row-sub">${statusPill(c.status)}${accessPill(c.access)} ${parts.join(' · ')}</div>
+      </div>
+      <div class="row-actions">${actions.join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══ PREMII ═══════════════════════════════════════════════════ */
+function syncGenFields(){ $('g-ratio-wrap').style.visibility = $('g-dist').value === 'pyramid' ? 'visible' : 'hidden'; }
+
+/* Împarte bugetul. Piramidă: cel mai mare premiu = R × cel mai mic,
+   cu scădere geometrică între ele. Banii se rotunjesc la 0,50 £ (la
+   0,01 £ dacă bugetul e mic), creditele la întreg. Restul de rotunjire
+   se împarte câte o unitate, începând cu premiile mari. */
+function splitBudget(budget, n, kind, dist, ratio){
+  if(!(budget > 0) || !(n >= 1)) return null;
+  const unit = kind === 'credits' ? 1 : (budget / 0.5 >= n * 2 ? 0.5 : 0.01);
+  if(budget / unit < n) return { error: `Bugetul e prea mic pentru ${n} premii.` };
+  let w;
+  if(dist === 'equal' || n === 1 || ratio <= 1) w = Array(n).fill(1);
+  else w = Array.from({ length:n }, (_, i) => Math.pow(ratio, (n - 1 - i) / (n - 1)));
+  const sum = w.reduce((a,b) => a + b, 0);
+  const units = Math.round(budget / unit);
+  let amounts = w.map(x => Math.max(1, Math.floor(units * x / sum)));
+  let diff = units - amounts.reduce((a,b) => a + b, 0);
+  for(let i = 0; diff > 0; i = (i + 1) % n, diff--) amounts[i]++;
+  for(let i = n - 1; diff < 0 && i >= 0; i--) while(diff < 0 && amounts[i] > 1){ amounts[i]--; diff++; }
+  if(diff !== 0) return { error: 'Nu pot împărți bugetul așa. Micșorează raportul sau numărul de premii.' };
+  return { amounts: amounts.map(a => kind === 'credits' ? a : Math.round(a * unit * 100) / 100).sort((a,b) => b - a) };
+}
+function freeTickets(comp){
+  const taken = new Set(prizes.filter(p => p.competition_id === comp.id).map(p => p.ticket));
+  return { taken, count: comp.total_tickets - taken.size };
+}
+function previewGen(){
+  genPlan = null;
+  $('g-btn').disabled = true;
+  $('g-preview').innerHTML = '';
+  const comp = compById($('p-comp').value);
+  if(!comp){ $('g-summary').textContent = ''; return; }
+  const budget = parseFloat($('g-budget').value), n = parseInt($('g-count').value);
+  const kind = $('g-kind').value, dist = $('g-dist').value, ratio = parseFloat($('g-ratio').value) || 1;
+  if(!(budget > 0) || !(n >= 1)){ $('g-summary').textContent = 'Completează bugetul și numărul de premii ca să vezi previzualizarea.'; return; }
+  const free = freeTickets(comp).count;
+  if(n > free){ $('g-summary').innerHTML = `<span style="color:var(--red)">Sunt doar ${free} bilete libere în competiția asta.</span>`; return; }
+  const res = splitBudget(budget, n, kind, dist, ratio);
+  if(!res || res.error){ $('g-summary').innerHTML = `<span style="color:var(--red)">${esc(res ? res.error : '')}</span>`; return; }
+  genPlan = { comp, kind, amounts: res.amounts };
+  const fmt = a => kind === 'credits' ? `⭐ ${a.toLocaleString('en-GB')}` : `£${a.toFixed(2).replace(/\.00$/, '')}`;
+  const groups = {};
+  res.amounts.forEach(a => groups[a] = (groups[a] || 0) + 1);
+  const total = res.amounts.reduce((a,b) => a + b, 0);
+  $('g-summary').innerHTML = `Total: <b>${fmt(kind === 'credits' ? total : Math.round(total * 100) / 100)}</b> în ${n} premii, pe bilete aleatorii din ${free.toLocaleString('en-GB')} libere.`;
+  $('g-preview').innerHTML = Object.entries(groups).sort((a,b) => b[0] - a[0]).map(([a, c]) => `<span>${c} × ${fmt(Number(a))}</span>`).join('');
+  $('g-btn').disabled = false;
+}
+async function runGenerator(){
+  if(!genPlan) return;
+  const { comp, kind, amounts } = genPlan;
+  if(!confirm(`Adaug ${amounts.length} premii în „${comp.name}”?`)) return;
+  // bilete libere, alese aleatoriu (fără premiu deja pus)
+  const { taken } = freeTickets(comp);
+  const { data: drawn } = await sb.from('instant_draws').select('ticket').eq('competition_id', comp.id);
+  (drawn || []).forEach(d => taken.add(d.ticket));
+  const pool = [];
+  for(let t = 1; t <= comp.total_tickets; t++) if(!taken.has(t)) pool.push(t);
+  if(pool.length < amounts.length) return flash('error', `Sunt doar ${pool.length} bilete libere (fără premiu și neextrase).`);
+  for(let i = 0; i < amounts.length; i++){
+    const j = i + Math.floor(Math.random() * (pool.length - i));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const rows = amounts.map((a, i) => ({ competition_id: comp.id, ticket: pool[i], kind, amount: a }));
+  $('g-btn').disabled = true;
+  flash('info', `Se adaugă ${rows.length} premii…`);
+  const { error } = await sb.from('instant_prizes').insert(rows);
+  if(error){ $('g-btn').disabled = false; return flash('error', errMsg(error)); }
+  flash('success', `⚡ ${rows.length} premii adăugate.`);
+  $('g-budget').value = ''; $('g-count').value = '';
+  await loadPrizeSummary();
+  renderPrizes(); renderComps();
+}
+async function addManualPrize(){
+  const comp = compById($('p-comp').value);
+  if(!comp) return flash('error','Alege competiția.');
+  const ticket = parseInt($('m-ticket').value), kind = $('m-kind').value, amount = parseFloat($('m-amount').value);
+  if(!(ticket >= 1 && ticket <= comp.total_tickets)) return flash('error', `Biletul trebuie să fie între 1 și ${comp.total_tickets}.`);
+  if(!(amount > 0)) return flash('error','Scrie valoarea premiului.');
+  if(kind === 'credits' && amount !== Math.floor(amount)) return flash('error','Creditele trebuie să fie număr întreg.');
+  const { count } = await sb.from('instant_draws').select('id', { count:'exact', head:true }).eq('competition_id', comp.id).eq('ticket', ticket);
+  if(count) return flash('error', `Biletul ${ticket} a fost deja extras. Alege altul.`);
+  const { error } = await sb.from('instant_prizes').insert({ competition_id: comp.id, ticket, kind, amount, label: $('m-label').value.trim() || null });
+  if(error) return flash('error', errMsg(error));
+  flash('success', `➕ Premiu pus pe biletul ${ticket}.`);
+  ['m-ticket','m-amount','m-label'].forEach(id => $(id).value = '');
+  await loadPrizeSummary();
+  renderPrizes(); renderComps();
+}
+async function deletePrize(id){
+  if(!confirm('Ștergi premiul?')) return;
+  const { error } = await sb.from('instant_prizes').delete().eq('id', id).is('won_by', null);
+  if(error) return flash('error', errMsg(error));
+  await loadPrizeSummary();
+  renderPrizes(); renderComps();
+}
+async function deleteAllUnwon(){
+  const comp = compById($('p-comp').value); if(!comp) return;
+  const n = prizes.filter(p => p.competition_id === comp.id && !p.won_by).length;
+  if(!n) return;
+  if(!confirm(`Ștergi toate cele ${n} premii necâștigate din „${comp.name}”?\nCele câștigate rămân.`)) return;
+  const { error } = await sb.from('instant_prizes').delete().eq('competition_id', comp.id).is('won_by', null);
+  if(error) return flash('error', errMsg(error));
+  flash('success', `🗑️ ${n} premii șterse.`);
+  await loadPrizeSummary();
+  renderPrizes(); renderComps();
+}
+async function renderPrizes(){
+  syncGenFields();
+  if(!players.length) await loadPlayers(true);
+  const comp = compById($('p-comp').value);
+  if(!comp){ $('p-list').innerHTML = '<div class="empty">Creează întâi o competiție.</div>'; $('p-stats').innerHTML = ''; previewGen(); return; }
+  const ps = prizes.filter(p => p.competition_id === comp.id);
+  const won = ps.filter(p => p.won_by);
+  const sumCash = k => ps.filter(p => p.kind === 'cash' && (k === 'all' || !!p.won_by === k)).reduce((a,p) => a + Number(p.amount), 0);
+  const sumCred = k => ps.filter(p => p.kind === 'credits' && (k === 'all' || !!p.won_by === k)).reduce((a,p) => a + Number(p.amount), 0);
+  $('p-stats').innerHTML = `
+    <div class="stat"><b>${ps.length}</b><span>premii total</span></div>
+    <div class="stat"><b>${won.length}</b><span>câștigate</span></div>
+    <div class="stat"><b>£${sumCash('all').toFixed(0)}</b><span>bani (£${sumCash(true).toFixed(0)} câștigați)</span></div>
+    <div class="stat"><b>${sumCred('all').toLocaleString('en-GB')}</b><span>credite (${sumCred(true).toLocaleString('en-GB')} câștigate)</span></div>`;
+  previewGen();
+  if(!ps.length){ $('p-list').innerHTML = '<div class="empty">Niciun premiu încă.</div>'; return; }
+  const winners = Object.fromEntries(players.map(p => [p.id, p.username]));
+  $('p-list').innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Bilet</th><th>Premiu</th><th>Stare</th><th></th></tr></thead><tbody>` +
+    ps.map(p => `<tr>
+      <td>#${String(p.ticket).padStart(5,'0')}</td>
+      <td>${fmtPrize(p)}</td>
+      <td>${p.won_by ? `<span class="pill pill-won">câștigat</span> ${esc(winners[p.won_by] || '')} · ${fmtDate(p.won_at)}` : '<span style="color:var(--muted)">liber</span>'}</td>
+      <td>${p.won_by ? '' : `<button class="btn btn-danger btn-sm" onclick="deletePrize(${p.id})">🗑️</button>`}</td>
+    </tr>`).join('') + '</tbody></table></div>' +
+    (ps.some(p => !p.won_by) ? `<button class="btn btn-danger btn-full" onclick="deleteAllUnwon()">🗑️ Șterge toate premiile necâștigate</button>` : '');
+}
+
+/* ═══ CUMPĂRĂTORI ══════════════════════════════════════════════ */
+function parseBuyers(text){
+  const map = {};
+  text.split('\n').forEach(line => {
+    const raw = line.trim(); if(!raw) return;
+    const [u, s] = raw.split('|').map(x => x.trim());
+    const name = nkey(u); if(!name) return;
+    const spins = parseInt(s) > 0 ? parseInt(s) : 1;
+    map[name] = (map[name] || 0) + spins;
+  });
+  return map;
+}
+async function saveBuyers(mode){
+  const comp = compById($('b-comp').value);
+  if(!comp) return flash('error','Alege competiția.');
+  const parsed = parseBuyers($('b-input').value);
+  const names = Object.keys(parsed);
+  if(!names.length) return flash('error','Lipește cel puțin un username.');
+  let rows;
+  if(mode === 'replace'){
+    if(!confirm(`Înlocuiești toată lista din „${comp.name}” cu ${names.length} username-uri?`)) return;
+    const { error } = await sb.from('instant_eligibility').delete().eq('competition_id', comp.id);
+    if(error) return flash('error', errMsg(error));
+    rows = names.map(u => ({ competition_id: comp.id, username: u, spins: parsed[u] }));
+  } else {
+    const { data: cur, error } = await sb.from('instant_eligibility').select('username,spins').eq('competition_id', comp.id);
+    if(error) return flash('error', errMsg(error));
+    const existing = Object.fromEntries((cur || []).map(r => [r.username, r.spins]));
+    rows = names.map(u => ({ competition_id: comp.id, username: u, spins: (existing[u] || 0) + parsed[u] }));
+  }
+  const { error } = await sb.from('instant_eligibility').upsert(rows, { onConflict: 'competition_id,username' });
+  if(error) return flash('error', errMsg(error));
+  flash('success', `🎟️ ${names.length} username-uri ${mode === 'replace' ? 'în lista nouă' : 'adăugate'}.`);
+  $('b-input').value = '';
+  renderBuyers();
+}
+async function removeBuyer(username){
+  const comp = compById($('b-comp').value); if(!comp) return;
+  if(!confirm(`Scoți ${username} din listă?`)) return;
+  const { error } = await sb.from('instant_eligibility').delete().eq('competition_id', comp.id).eq('username', username);
+  if(error) return flash('error', errMsg(error));
+  renderBuyers();
+}
+async function renderBuyers(){
+  const comp = compById($('b-comp').value);
+  if(!comp){ $('b-list').innerHTML = '<div class="empty">Creează întâi o competiție.</div>'; $('b-note').textContent = ''; return; }
+  $('b-note').innerHTML = comp.access === 'open'
+    ? '<span style="color:var(--orange)">Competiția asta e deschisă: oricine joacă gratuit, lista nu contează.</span>'
+    : 'Doar username-urile de aici primesc spin-uri gratuite în competiția asta.';
+  const [{ data: list, error }, { data: draws }] = await Promise.all([
+    sb.from('instant_eligibility').select('username,spins').eq('competition_id', comp.id).order('username'),
+    sb.from('instant_draws').select('username,paid_with').eq('competition_id', comp.id).eq('paid_with','free')
+  ]);
+  if(error) return flash('error', errMsg(error));
+  if(!list.length){ $('b-list').innerHTML = '<div class="empty">Lista e goală.</div>'; return; }
+  if(!players.length) await loadPlayers(true);
+  const hasAccount = new Set(players.map(p => nkey(p.username)));
+  const used = {};
+  (draws || []).forEach(d => { const k = nkey(d.username); used[k] = (used[k] || 0) + 1; });
+  const total = list.reduce((a,r) => a + r.spins, 0);
+  $('b-list').innerHTML = `<div class="note" style="margin-bottom:10px">${list.length} username-uri · ${total} spin-uri · ${list.filter(r => hasAccount.has(r.username)).length} au deja cont</div>
+    <div class="table-wrap"><table><thead><tr><th>Username</th><th>Spin-uri</th><th>Folosite</th><th>Cont</th><th></th></tr></thead><tbody>` +
+    list.map(r => `<tr>
+      <td>${esc(r.username)}</td><td>${r.spins}</td><td>${used[r.username] || 0}</td>
+      <td>${hasAccount.has(r.username) ? '✅' : '<span style="color:var(--muted)">încă nu</span>'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="removeBuyer('${esc(r.username)}')">✕</button></td>
+    </tr>`).join('') + '</tbody></table></div>';
+}
+
+/* ═══ JUCĂTORI ═════════════════════════════════════════════════ */
+async function loadPlayers(silent){
+  const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending:false });
+  if(error) return flash('error', errMsg(error));
+  players = data;
+  if(!silent) renderPlayers();
+}
+function renderPlayers(){
+  const q = nkey($('pl-search').value);
+  const list = players.filter(p => !q || nkey(p.username).includes(q));
+  const totalCred = players.reduce((a,p) => a + p.credits, 0);
+  $('pl-stats').innerHTML = `
+    <div class="stat"><b>${players.length}</b><span>conturi</span></div>
+    <div class="stat"><b>${players.filter(p => p.verified).length}</b><span>verificate</span></div>
+    <div class="stat"><b>${totalCred.toLocaleString('en-GB')}</b><span>credite în conturi (£${(totalCred / 100).toFixed(2)})</span></div>`;
+  if(!list.length){ $('pl-list').innerHTML = `<div class="empty">${players.length ? 'Niciun rezultat.' : 'Niciun cont încă.'}</div>`; return; }
+  $('pl-list').innerHTML = list.map(p => `<div class="row" id="pl-${p.id}">
+    <div class="row-main">
+      <div class="row-name">${esc(p.username)} ${p.verified ? '<span class="pill pill-active">✓ verificat</span>' : ''}</div>
+      <div class="row-sub">⭐ ${p.credits.toLocaleString('en-GB')} credite · cont din ${fmtDate(p.created_at)}</div>
+      <div id="ledger-${p.id}"></div>
+    </div>
+    <div class="row-actions">
+      <button class="btn btn-ghost btn-sm" onclick="toggleVerified('${p.id}')">${p.verified ? 'Scoate verificarea' : '✓ Verifică'}</button>
+      <button class="btn btn-ghost btn-sm" onclick="adjustCredits('${p.id}')">± Credite</button>
+      <button class="btn btn-ghost btn-sm" onclick="renameUser('${p.id}')">✏️ Username</button>
+      <button class="btn btn-ghost btn-sm" onclick="showLedger('${p.id}')">📜 Istoric</button>
+    </div>
+  </div>`).join('');
+}
+const playerById = id => players.find(p => p.id === id);
+async function toggleVerified(id){
+  const p = playerById(id); if(!p) return;
+  const { error } = await sb.rpc('admin_update_profile', { p_user: id, p_username: p.username, p_verified: !p.verified });
+  if(error) return flash('error', errMsg(error));
+  flash('success', p.verified ? 'Verificare scoasă.' : `✓ ${esc(p.username)} e verificat.`);
+  await loadPlayers();
+}
+async function renameUser(id){
+  const p = playerById(id); if(!p) return;
+  const name = prompt(`Username nou pentru ${p.username}:\n(folosește doar dacă a greșit username-ul sau într-o dispută)`, p.username);
+  if(name === null || name.trim() === p.username) return;
+  const { error } = await sb.rpc('admin_update_profile', { p_user: id, p_username: name, p_verified: p.verified });
+  if(error) return flash('error', errMsg(error));
+  flash('success','✏️ Username schimbat.');
+  await loadPlayers();
+}
+async function adjustCredits(id){
+  const p = playerById(id); if(!p) return;
+  const v = prompt(`Credite pentru ${p.username} (sold: ${p.credits}).\nScrie +500 ca să adaugi sau -200 ca să scazi:`);
+  if(v === null) return;
+  const delta = parseInt(v.replace(/\s/g, ''));
+  if(!delta) return flash('error','Scrie un număr, ex: +500 sau -200.');
+  const reason = prompt('Motiv (apare în istoric):', delta > 0 ? 'bonus' : 'corecție');
+  if(reason === null) return;
+  const { data, error } = await sb.rpc('admin_adjust_credits', { p_user: id, p_delta: delta, p_reason: reason });
+  if(error) return flash('error', errMsg(error));
+  flash('success', `⭐ Sold nou pentru ${esc(p.username)}: ${Number(data).toLocaleString('en-GB')} credite.`);
+  await loadPlayers();
+}
+async function showLedger(id){
+  const box = $('ledger-' + id);
+  if(box.innerHTML){ box.innerHTML = ''; return; }
+  const { data, error } = await sb.from('credit_ledger').select('*').eq('user_id', id).order('created_at', { ascending:false }).limit(50);
+  if(error) return flash('error', errMsg(error));
+  if(!data.length){ box.innerHTML = '<div class="note">Nicio mișcare de credite.</div>'; return; }
+  const why = r => r === 'prize' ? 'premiu câștigat' : r === 'spin' ? 'spin plătit' : esc(r);
+  box.innerHTML = `<div class="table-wrap ledger"><table><thead><tr><th>Când</th><th>Mișcare</th><th>Sold după</th><th>Motiv</th></tr></thead><tbody>` +
+    data.map(r => `<tr><td>${fmtDate(r.created_at)}</td><td style="color:${r.delta > 0 ? 'var(--green)' : 'var(--red)'}">${r.delta > 0 ? '+' : ''}${r.delta}</td><td>${r.balance_after}</td><td>${why(r.reason)}</td></tr>`).join('') +
+    '</tbody></table></div>';
+}
+
+/* ═══ EXTRAGERI ════════════════════════════════════════════════ */
+async function renderDraws(){
+  const comp = compById($('d-comp').value);
+  if(!comp){ $('d-list').innerHTML = '<div class="empty">Creează întâi o competiție.</div>'; $('d-stats').innerHTML = ''; return; }
+  const { data, error } = await sb.from('instant_draws')
+    .select('*, instant_prizes(kind,amount,label)')
+    .eq('competition_id', comp.id).order('created_at', { ascending:false }).limit(1000);
+  if(error) return flash('error', errMsg(error));
+  const wins = data.filter(d => d.prize_id);
+  const people = new Set(data.map(d => d.user_id)).size;
+  const spent = data.reduce((a,d) => a + d.credits_spent, 0);
+  $('d-stats').innerHTML = `
+    <div class="stat"><b>${data.length}</b><span>spin-uri</span></div>
+    <div class="stat"><b>${people}</b><span>jucători</span></div>
+    <div class="stat"><b>${wins.length}</b><span>câștiguri</span></div>
+    <div class="stat"><b>${spent.toLocaleString('en-GB')}</b><span>credite cheltuite</span></div>`;
+  if(!data.length){ $('d-list').innerHTML = '<div class="empty">Nicio extragere încă.</div>'; return; }
+  $('d-list').innerHTML = `<div class="table-wrap"><table><thead><tr><th>Când</th><th>Jucător</th><th>Bilet</th><th>Plătit cu</th><th>Rezultat</th></tr></thead><tbody>` +
+    data.map(d => `<tr>
+      <td>${fmtDate(d.created_at)}</td>
+      <td>${esc(d.username)}</td>
+      <td>#${String(d.ticket).padStart(5,'0')}</td>
+      <td>${d.paid_with === 'credits' ? `⭐ ${d.credits_spent}` : 'gratuit'}</td>
+      <td>${d.prize_id && d.instant_prizes ? `<span class="pill pill-won">🏆 ${fmtPrize(d.instant_prizes)}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+    </tr>`).join('') + '</tbody></table></div>';
+}
+
+/* ═══ PORNIRE ══════════════════════════════════════════════════ */
+syncAccessFields();
+enterIfAdmin();
+</script>
+</body>
+</html>
