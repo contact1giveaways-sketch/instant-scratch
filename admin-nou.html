@@ -8,20 +8,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
-:root{--gold:#F5C842;--gold-dim:#C49A1A;--black:#080808;--surface:#111;--card:#161616;--border:rgba(255,255,255,0.08);--text:#E8E8E8;--muted:#7a7a7a;--green:#22C55E;--red:#EF4444;--blue:#3B82F6;--orange:#F59E0B}
+:root{--gold:#C9952A;--gold-dim:#a8781c;--black:#f7f4ed;--surface:#faf8f3;--card:#fff;--border:#e7e0d5;--text:#101010;--muted:#706d67;--green:#2D7D46;--red:#c0392b;--blue:#2f5fb3;--orange:#c2610c}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding:20px}
 .wrap{max-width:860px;margin:0 auto}
 header{padding:20px 0 16px;border-bottom:1px solid var(--border);margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .logo{display:flex;align-items:center;gap:12px}
-.logo-box{width:40px;height:40px;background:var(--gold);border-radius:10px;display:grid;place-items:center;font-size:20px}
+.logo-box{width:40px;height:40px;background:#101010;border-radius:12px;display:grid;place-items:center;font-size:20px}
 .logo-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--gold)}
 .logo-sub{font-size:11px;color:var(--muted)}
 .hdr-links{display:flex;gap:14px;align-items:center;font-size:13px}
 .hdr-links a{color:var(--muted);text-decoration:none}
 .hdr-links a:hover{color:var(--gold)}
-.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px}
-.card-title{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:var(--gold);margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:22px;margin-bottom:16px;box-shadow:0 10px 40px rgba(43,32,13,.06)}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:2px;color:var(--text);margin-bottom:14px}
 label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin:12px 0 6px}
 input,select,textarea{width:100%;padding:11px 13px;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none}
 input:focus,select:focus,textarea:focus{border-color:rgba(245,200,66,.5)}
@@ -31,8 +31,8 @@ textarea{min-height:140px;resize:vertical;font-family:ui-monospace,Consolas,mono
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .btn{padding:11px 20px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.btn-gold{background:var(--gold);color:#000}
-.btn-gold:hover:not(:disabled){background:#f7d155}
+.btn-gold{background:#101010;color:#fff}
+.btn-gold:hover:not(:disabled){background:#2a2a2a}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
 .btn-ghost:hover:not(:disabled){border-color:rgba(245,200,66,.4);color:var(--gold)}
 .btn-danger{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red)}
@@ -45,13 +45,13 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .alert.show{display:block}
 .alert-success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green)}
 .alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red)}
-.alert-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:#7fb0ff}
+.alert-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:#2f5fb3}
 .alert-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--orange)}
 #global-alert{position:sticky;top:10px;z-index:20}
 .tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:5px;margin-bottom:22px;overflow-x:auto}
 .tab{flex:0 0 auto;padding:10px 15px;background:transparent;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;border-radius:10px;cursor:pointer;white-space:nowrap}
 .tab:hover{color:var(--text)}
-.tab.active{background:var(--card);color:var(--gold)}
+.tab.active{background:#101010;color:#fff}
 .section{display:none}
 .section.active{display:block}
 .row{display:flex;align-items:center;gap:10px;padding:13px 15px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;flex-wrap:wrap}
@@ -62,16 +62,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .row-actions{display:flex;gap:6px;flex-wrap:wrap}
 .pill{display:inline-block;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin-right:4px}
 .pill-active{background:rgba(34,197,94,.12);color:var(--green)}
-.pill-draft{background:rgba(255,255,255,.08);color:#bbb}
+.pill-draft{background:rgba(0,0,0,.06);color:#706d67}
 .pill-paused{background:rgba(245,158,11,.12);color:var(--orange)}
 .pill-closed{background:rgba(239,68,68,.12);color:var(--red)}
-.pill-open{background:rgba(59,130,246,.12);color:#7fb0ff}
+.pill-open{background:rgba(59,130,246,.12);color:#2f5fb3}
 .pill-buyers{background:rgba(245,200,66,.12);color:var(--gold)}
 .pill-won{background:rgba(34,197,94,.12);color:var(--green)}
 .table-wrap{overflow-x:auto;max-height:440px;overflow-y:auto;border:1px solid var(--border);border-radius:12px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-size:11px;color:var(--muted);font-weight:700;padding:9px 12px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;white-space:nowrap}
-td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.04);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #f0ebe1;white-space:nowrap}
 tr:last-child td{border-bottom:none}
 .empty{text-align:center;padding:28px;color:var(--muted);font-size:14px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
