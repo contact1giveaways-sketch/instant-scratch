@@ -155,7 +155,7 @@ tr:last-child td{border-bottom:none}
         <div class="grid-3">
           <div>
             <label for="c-tickets">Total bilete</label>
-            <input type="number" id="c-tickets" value="10000" min="1" max="99999">
+            <input type="number" id="c-tickets" value="10000" min="1" max="1000000">
           </div>
           <div id="free-spins-wrap">
             <label for="c-free">Spin-uri gratuite / cont</label>
@@ -249,6 +249,10 @@ tr:last-child td{border-bottom:none}
         <label for="b-comp">Competiția</label>
         <select id="b-comp" onchange="renderBuyers()"></select>
         <div class="note" id="b-note"></div>
+
+        <div class="sub-head">🙋 Cereri de verificare</div>
+        <div class="note" style="margin-bottom:10px">Jucători care și-au făcut cont și spun că au cumpărat bilet, dar nu sunt încă în listă. Caută-i pe Raffall și adaugă-i — cererea dispare singură când username-ul intră în listă.</div>
+        <div id="b-requests"></div>
 
         <div class="sub-head">Lipește lista de pe Raffall</div>
         <textarea id="b-input" placeholder="Un username pe rând. Opțional: username | spin-uri&#10;&#10;john_doe&#10;jane99 | 3&#10;@peppajack"></textarea>
@@ -446,7 +450,7 @@ async function saveComp(){
     raffall_link: $('c-link').value.trim() || null
   };
   if(!row.name) return flash('error','Scrie numele competiției.');
-  if(row.total_tickets < 1 || row.total_tickets > 99999) return flash('error','Totalul de bilete trebuie să fie între 1 și 99.999.');
+  if(row.total_tickets < 1 || row.total_tickets > 1000000) return flash('error','Totalul de bilete trebuie să fie între 1 și 1.000.000.');
   if(id){
     const c = compById(id);
     const maxPrizeTicket = Math.max(0, ...prizes.filter(p => String(p.competition_id) === String(id)).map(p => p.ticket));
@@ -502,6 +506,7 @@ function renderComps(){
     return `<div class="row${$('c-id').value === String(c.id) ? ' editing' : ''}">
       <div class="row-main">
         <div class="row-name">${esc(c.name)}</div>
+        ${c.raffle_id ? '<div class="row-sub">🔗 Legată de tombola de pe site — butonul de pe card apare când o activezi.</div>' : ''}
         <div class="row-sub">${statusPill(c.status)}${accessPill(c.access)} ${parts.join(' · ')}</div>
       </div>
       <div class="row-actions">${actions.join('')}</div>
@@ -688,9 +693,42 @@ async function removeBuyer(username){
   if(error) return flash('error', errMsg(error));
   renderBuyers();
 }
+async function renderRequests(comp){
+  const box = $('b-requests');
+  if(comp.access !== 'buyers'){ box.innerHTML = '<div class="note">Competiție deschisă — nu e nevoie de cereri.</div>'; return; }
+  const { data, error } = await sb.from('instant_requests').select('*').eq('competition_id', comp.id).order('created_at');
+  if(error){ box.innerHTML = `<div class="note">${errMsg(error)}</div>`; return; }
+  if(!data.length){ box.innerHTML = '<div class="empty" style="padding:14px">Nicio cerere în așteptare.</div>'; return; }
+  box.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Username</th><th>Cerut</th><th></th></tr></thead><tbody>` +
+    data.map(r => `<tr>
+      <td><b>${esc(r.username)}</b></td><td>${fmtDate(r.created_at)}</td>
+      <td style="text-align:right">
+        <button class="btn btn-gold btn-sm" onclick="approveRequest('${esc(r.username)}')">✓ E pe Raffall — adaugă</button>
+        <button class="btn btn-ghost btn-sm" onclick="dismissRequest('${r.user_id}')">✕ Nu l-am găsit</button>
+      </td></tr>`).join('') + '</tbody></table></div>' +
+    `<div class="note" style="margin-top:8px">„Adaugă” îi dă 1 spin. Dacă a cumpărat mai multe bilete, scrie-l în câmpul de mai jos cu <code>username | spin-uri</code>.</div>`;
+}
+async function approveRequest(username){
+  const comp = compById($('b-comp').value); if(!comp) return;
+  const key = nkey(username);
+  const { data: cur } = await sb.from('instant_eligibility').select('spins').eq('competition_id', comp.id).eq('username', key).maybeSingle();
+  const { error } = await sb.from('instant_eligibility').upsert({ competition_id: comp.id, username: key, spins: (cur ? cur.spins : 0) + 1 }, { onConflict: 'competition_id,username' });
+  if(error) return flash('error', errMsg(error));
+  flash('success', `🎟️ ${esc(username)} adăugat cu 1 spin.`);
+  renderBuyers();
+}
+async function dismissRequest(userId){
+  const comp = compById($('b-comp').value); if(!comp) return;
+  if(!confirm('Ștergi cererea? Jucătorul o poate trimite din nou.')) return;
+  const { error } = await sb.from('instant_requests').delete().eq('competition_id', comp.id).eq('user_id', userId);
+  if(error) return flash('error', errMsg(error));
+  renderBuyers();
+}
+
 async function renderBuyers(){
   const comp = compById($('b-comp').value);
-  if(!comp){ $('b-list').innerHTML = '<div class="empty">Creează întâi o competiție.</div>'; $('b-note').textContent = ''; return; }
+  if(!comp){ $('b-list').innerHTML = '<div class="empty">Creează întâi o competiție.</div>'; $('b-note').textContent = ''; $('b-requests').innerHTML = ''; return; }
+  renderRequests(comp);
   $('b-note').innerHTML = comp.access === 'open'
     ? '<span style="color:var(--orange)">Competiția asta e deschisă: oricine joacă gratuit, lista nu contează.</span>'
     : 'Doar username-urile de aici primesc spin-uri gratuite în competiția asta.';
