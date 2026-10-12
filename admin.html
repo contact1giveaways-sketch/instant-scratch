@@ -90,6 +90,11 @@ tr:last-child td{border-bottom:none}
 .toggle-line input{width:18px;height:18px}
 .ledger{margin-top:10px;width:100%}
 @media(max-width:600px){.grid-2,.grid-3{grid-template-columns:1fr}body{padding:12px}.card{padding:16px}}
+.spin-modes{display:flex;flex-direction:column;gap:8px}
+.spin-mode{display:flex;align-items:center;gap:10px;margin:0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-weight:500;font-size:14px;cursor:pointer}
+.spin-mode input[type=radio]{width:18px;height:18px;margin:0;accent-color:#101010;flex-shrink:0}
+.spin-mode input[type=number]{width:80px;padding:6px 8px;display:inline-block;margin:0 4px}
+#b-preview{margin-top:10px}
 </style>
 </head>
 <body>
@@ -255,10 +260,19 @@ tr:last-child td{border-bottom:none}
         <div id="b-requests"></div>
 
         <div class="sub-head">Lipește lista de pe Raffall</div>
-        <textarea id="b-input" placeholder="Un username pe rând. Opțional: username | spin-uri&#10;&#10;john_doe&#10;jane99 | 3&#10;@peppajack"></textarea>
-        <div class="note">Dacă un username apare de mai multe ori, spin-urile se adună. Fără număr = 1 spin. „@” din față se ignoră.</div>
+        <div class="note" style="margin-bottom:8px">Pe Raffall apasă <b>Load More</b> până se încarcă toți participanții, apoi selectează tot și copiază. „x10”, „Load More” și titlurile se curăță singure.</div>
+        <textarea id="b-input" oninput="previewBuyers()" placeholder="Lipește aici lista de participanți de pe Raffall&#10;&#10;Maurits   x10&#10;Luis Cruz   x150&#10;Iain Morton   x1"></textarea>
+
+        <label>Câte spin-uri primește fiecare</label>
+        <div class="spin-modes">
+          <label class="spin-mode"><input type="radio" name="b-mode" value="one" checked onchange="previewBuyers()"> <span><b>1 spin</b> fiecare</span></label>
+          <label class="spin-mode"><input type="radio" name="b-mode" value="custom" onchange="previewBuyers()"> <span><b>Custom:</b> <input type="number" id="b-custom" min="1" value="3" oninput="previewBuyers()" onfocus="document.querySelector('input[name=b-mode][value=custom]').checked=true;previewBuyers()"> spin-uri fiecare</span></label>
+          <label class="spin-mode"><input type="radio" name="b-mode" value="tickets" onchange="previewBuyers()"> <span><b>După bilete:</b> x10 = 10 spin-uri</span></label>
+        </div>
+        <div class="note" id="b-preview"></div>
+
         <div class="btn-row">
-          <button class="btn btn-gold" onclick="saveBuyers('add')">➕ Adaugă la listă</button>
+          <button class="btn btn-gold" onclick="saveBuyers('add')">➕ Actualizează lista</button>
           <button class="btn btn-ghost" onclick="saveBuyers('replace')">♻️ Înlocuiește toată lista</button>
         </div>
 
@@ -271,7 +285,7 @@ tr:last-child td{border-bottom:none}
     <section class="section" id="sec-players">
       <div class="card">
         <div class="stats" id="pl-stats"></div>
-        <input type="search" id="pl-search" placeholder="🔍 Caută username…" oninput="renderPlayers()">
+        <input type="search" id="pl-search" placeholder="🔍 Caută nume…" oninput="renderPlayers()">
         <div id="pl-list" style="margin-top:12px"></div>
       </div>
     </section>
@@ -651,39 +665,78 @@ async function renderPrizes(){
 }
 
 /* ═══ CUMPĂRĂTORI ══════════════════════════════════════════════ */
+/* Curăță lista copiată de pe Raffall:
+   „Maurits  x10” → Maurits cu 10 bilete. „x10” pe rând separat se lipește
+   de numele de deasupra. Titlurile paginii („Entrants”, „Load More”…) se ignoră. */
+const RAFFALL_JUNK = /^(entrants|load more|\(includes paid and free tickets\)|\d[\d,]*\s+tickets? (have|has) been issued\.?)$/i;
 function parseBuyers(text){
-  const map = {};
-  text.split('\n').forEach(line => {
-    const raw = line.trim(); if(!raw) return;
-    const [u, s] = raw.split('|').map(x => x.trim());
-    const name = nkey(u); if(!name) return;
-    const spins = parseInt(s) > 0 ? parseInt(s) : 1;
-    map[name] = (map[name] || 0) + spins;
+  const seen = {}, tickets = {}, order = [];
+  let last = null;
+  text.replace(/\r/g, '').split('\n').forEach(line => {
+    let raw = line.replace(/[ \t]+/g, ' ').trim();
+    if(!raw || RAFFALL_JUNK.test(raw)) return;
+    const only = raw.match(/^x\s*(\d+)$/i);                 // „x10” singur pe rând
+    if(only){ if(last) tickets[last] = (tickets[last] || 0) + parseInt(only[1]); return; }
+    let t = 0;
+    const m = raw.match(/^(.*\S)\s+x\s*(\d+)$/i);             // „Nume x10”
+    if(m){ raw = m[1].trim(); t = parseInt(m[2]); }
+    const name = nkey(raw); if(!name) return;
+    if(!(name in seen)){ seen[name] = 0; order.push(name); }
+    seen[name]++;
+    if(t) tickets[name] = (tickets[name] || 0) + t;
+    last = name;
   });
-  return map;
+  return order.map(n => ({ username: n, tickets: tickets[n] || seen[n] }));
+}
+function buyerMode(){ return document.querySelector('input[name=b-mode]:checked').value; }
+function spinsFor(b){
+  const mode = buyerMode();
+  if(mode === 'custom') return Math.max(parseInt($('b-custom').value) || 1, 1);
+  if(mode === 'tickets') return Math.max(b.tickets, 1);
+  return 1;
+}
+function readBuyers(){ return parseBuyers($('b-input').value); }
+function previewBuyers(){
+  const list = readBuyers();
+  const box = $('b-preview');
+  if(!list.length){ box.innerHTML = ''; return; }
+  const total = list.reduce((a,b) => a + spinsFor(b), 0);
+  const show = list.slice(0, 8).map(b => `<span>${esc(b.username)} · ${spinsFor(b)}</span>`).join('');
+  box.innerHTML = `Am găsit <b>${list.length}</b> participanți · <b>${total}</b> spin-uri în total.<div class="preview-list">${show}${list.length > 8 ? `<span>+ încă ${list.length - 8}</span>` : ''}</div>`;
 }
 async function saveBuyers(mode){
   const comp = compById($('b-comp').value);
   if(!comp) return flash('error','Alege competiția.');
-  const parsed = parseBuyers($('b-input').value);
-  const names = Object.keys(parsed);
-  if(!names.length) return flash('error','Lipește cel puțin un username.');
-  let rows;
+  const list = readBuyers();
+  if(!list.length) return flash('error','Lipește lista de participanți.');
+  let rows, added = 0, raised = 0;
   if(mode === 'replace'){
-    if(!confirm(`Înlocuiești toată lista din „${comp.name}” cu ${names.length} username-uri?`)) return;
+    if(!confirm(`Înlocuiești toată lista din „${comp.name}” cu ${list.length} participanți?`)) return;
     const { error } = await sb.from('instant_eligibility').delete().eq('competition_id', comp.id);
     if(error) return flash('error', errMsg(error));
-    rows = names.map(u => ({ competition_id: comp.id, username: u, spins: parsed[u] }));
+    rows = list.map(b => ({ competition_id: comp.id, username: b.username, spins: spinsFor(b) }));
+    added = rows.length;
   } else {
+    // Actualizare: adaugă oamenii noi și crește spin-urile dacă au cumpărat mai mult.
+    // Nu adună peste ce era — poți lipi zilnic toată lista fără să dublezi spin-uri.
     const { data: cur, error } = await sb.from('instant_eligibility').select('username,spins').eq('competition_id', comp.id);
     if(error) return flash('error', errMsg(error));
     const existing = Object.fromEntries((cur || []).map(r => [r.username, r.spins]));
-    rows = names.map(u => ({ competition_id: comp.id, username: u, spins: (existing[u] || 0) + parsed[u] }));
+    rows = [];
+    list.forEach(b => {
+      const want = spinsFor(b), had = existing[b.username];
+      if(had === undefined){ added++; rows.push({ competition_id: comp.id, username: b.username, spins: want }); }
+      else if(want > had){ raised++; rows.push({ competition_id: comp.id, username: b.username, spins: want }); }
+    });
+    if(!rows.length){ flash('info','Nimic nou — toți participanții erau deja în listă.'); $('b-input').value = ''; previewBuyers(); return renderBuyers(); }
   }
   const { error } = await sb.from('instant_eligibility').upsert(rows, { onConflict: 'competition_id,username' });
   if(error) return flash('error', errMsg(error));
-  flash('success', `🎟️ ${names.length} username-uri ${mode === 'replace' ? 'în lista nouă' : 'adăugate'}.`);
+  flash('success', mode === 'replace'
+    ? `🎟️ Listă nouă: ${added} participanți.`
+    : `🎟️ ${added} participanți noi${raised ? `, ${raised} cu spin-uri în plus` : ''}.`);
   $('b-input').value = '';
+  previewBuyers();
   renderBuyers();
 }
 async function removeBuyer(username){
@@ -699,7 +752,7 @@ async function renderRequests(comp){
   const { data, error } = await sb.from('instant_requests').select('*').eq('competition_id', comp.id).order('created_at');
   if(error){ box.innerHTML = `<div class="note">${errMsg(error)}</div>`; return; }
   if(!data.length){ box.innerHTML = '<div class="empty" style="padding:14px">Nicio cerere în așteptare.</div>'; return; }
-  box.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Username</th><th>Cerut</th><th></th></tr></thead><tbody>` +
+  box.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Nume Raffall</th><th>Cerut</th><th></th></tr></thead><tbody>` +
     data.map(r => `<tr>
       <td><b>${esc(r.username)}</b></td><td>${fmtDate(r.created_at)}</td>
       <td style="text-align:right">
@@ -744,7 +797,7 @@ async function renderBuyers(){
   (draws || []).forEach(d => { const k = nkey(d.username); used[k] = (used[k] || 0) + 1; });
   const total = list.reduce((a,r) => a + r.spins, 0);
   $('b-list').innerHTML = `<div class="note" style="margin-bottom:10px">${list.length} username-uri · ${total} spin-uri · ${list.filter(r => hasAccount.has(r.username)).length} au deja cont</div>
-    <div class="table-wrap"><table><thead><tr><th>Username</th><th>Spin-uri</th><th>Folosite</th><th>Cont</th><th></th></tr></thead><tbody>` +
+    <div class="table-wrap"><table><thead><tr><th>Nume Raffall</th><th>Spin-uri</th><th>Folosite</th><th>Cont</th><th></th></tr></thead><tbody>` +
     list.map(r => `<tr>
       <td>${esc(r.username)}</td><td>${r.spins}</td><td>${used[r.username] || 0}</td>
       <td>${hasAccount.has(r.username) ? '✅' : '<span style="color:var(--muted)">încă nu</span>'}</td>
@@ -777,7 +830,7 @@ function renderPlayers(){
     <div class="row-actions">
       <button class="btn btn-ghost btn-sm" onclick="toggleVerified('${p.id}')">${p.verified ? 'Scoate verificarea' : '✓ Verifică'}</button>
       <button class="btn btn-ghost btn-sm" onclick="adjustCredits('${p.id}')">± Credite</button>
-      <button class="btn btn-ghost btn-sm" onclick="renameUser('${p.id}')">✏️ Username</button>
+      <button class="btn btn-ghost btn-sm" onclick="renameUser('${p.id}')">✏️ Nume</button>
       <button class="btn btn-ghost btn-sm" onclick="showLedger('${p.id}')">📜 Istoric</button>
     </div>
   </div>`).join('');
@@ -792,7 +845,7 @@ async function toggleVerified(id){
 }
 async function renameUser(id){
   const p = playerById(id); if(!p) return;
-  const name = prompt(`Username nou pentru ${p.username}:\n(folosește doar dacă a greșit username-ul sau într-o dispută)`, p.username);
+  const name = prompt(`Nume Raffall nou pentru ${p.username}:\n(folosește doar dacă a greșit username-ul sau într-o dispută)`, p.username);
   if(name === null || name.trim() === p.username) return;
   const { error } = await sb.rpc('admin_update_profile', { p_user: id, p_username: name, p_verified: p.verified });
   if(error) return flash('error', errMsg(error));
