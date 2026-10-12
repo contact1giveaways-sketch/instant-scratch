@@ -315,17 +315,18 @@ footer{padding:10px 0 42px;color:#8b867d;font-size:11px}
 
     <div class="card" id="username-card" style="display:none">
       <div class="card-title">One last step</div>
-      <div class="card-sub">Tell us your Raffall username.</div>
+      <div class="card-sub">Tell us your name exactly as it appears on Raffall.</div>
       <div id="un-alert" class="alert"></div>
-      <label for="un-input">Raffall username</label>
-      <input type="text" id="un-input" placeholder="e.g. john_doe123" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label for="un-input">Your name on Raffall</label>
+      <input type="text" id="un-input" placeholder="e.g. James Walker" autocomplete="off" autocapitalize="off" spellcheck="false">
       <div class="warn-box">
-        ⚠️ <b>It must be exactly the same as your username on Raffall.</b>
+        ⚠️ <b>Use your Raffall <u>name</u>, not your username.</b><br>
+        On Raffall you have a username (e.g. <i>jwalker88</i>) and a name (e.g. <i>James Walker</i>). The entrants list of every competition shows your <b>name</b> — that's how we find your tickets, so type it exactly the same.<br>
         That's how we recognise your tickets and pay your prizes. If it doesn't match, we can't find your entries.
         You can't change it yourself later.
       </div>
-      <label class="check"><input type="checkbox" id="un-confirm"> <span>I confirm this is my own Raffall username.</span></label>
-      <button class="btn btn-gold btn-full" onclick="saveUsername()">Save username</button>
+      <label class="check"><input type="checkbox" id="un-confirm"> <span>I confirm this is my own name as shown on Raffall.</span></label>
+      <button class="btn btn-gold btn-full" onclick="saveUsername()">Save my Raffall name</button>
     </div>
 
     <div class="card" id="newpass-card" style="display:none">
@@ -404,7 +405,7 @@ const hideAlert = id => $(id) && $(id).classList.remove('show');
 
 const ERR = {
   not_logged_in:        'Please sign in first.',
-  no_profile:           'Please set your Raffall username first.',
+  no_profile:           'Please set your Raffall name first.',
   competition_not_active:'This competition is not open for spins right now.',
   too_many_requests:    'Slow down a little — max 5 spins a minute. Try again in a moment.',
   already_won:          "You've already won in this competition — congratulations! Winners can't spin again here.",
@@ -413,9 +414,9 @@ const ERR = {
   no_credit_spins:      "You've used all the credit spins allowed in this competition.",
   not_enough_credits:   "You don't have enough credits for this spin.",
   sold_out:             'All tickets in this competition have been drawn.',
-  username_taken:       'That username is already linked to another account. If it is yours, contact us on Telegram @suportGiveaways.',
-  invalid_username:     'Usernames must be 2–40 characters.',
-  profile_exists:       'Your username is already set.'
+  username_taken:       'That name is already linked to another account. If it is yours, contact us on Telegram @suportGiveaways and we will sort it out.',
+  invalid_username:     'Your name must be 2–40 characters.',
+  profile_exists:       'Your Raffall name is already set.'
 };
 function errText(e){
   const m = (e && (e.message || e.error_description)) || String(e);
@@ -515,9 +516,9 @@ async function saveNewPassword(){
 }
 async function saveUsername(){
   const raw = $('un-input').value.trim().replace(/^@+/, '').trim();
-  if(raw.length < 2) return showAlert('un-alert','error','Enter your Raffall username.');
-  if(!$('un-confirm').checked) return showAlert('un-alert','error','Please tick the box to confirm it is your own Raffall username.');
-  if(!confirm(`Your Raffall username is "${raw}"?\n\nIt must match Raffall exactly. You can't change it later.`)) return;
+  if(raw.length < 2) return showAlert('un-alert','error','Enter your name as it appears on Raffall.');
+  if(!$('un-confirm').checked) return showAlert('un-alert','error','Please tick the box to confirm it is your own Raffall name.');
+  if(!confirm(`Your name on Raffall is "${raw}"?\n\nIt must match the entrants list on Raffall exactly — your name, not your username. You can't change it later.`)) return;
   const { error } = await sb.rpc('create_profile', { p_username: raw });
   if(error) return showAlert('un-alert','error', errText(error));
   await refreshUser();
@@ -640,7 +641,7 @@ async function renderPlayState(){
     return;
   }
   if(!me){
-    actions.innerHTML = `<button class="spin-btn" onclick="showTab('account')">Set your Raffall username</button>`;
+    actions.innerHTML = `<button class="spin-btn" onclick="showTab('account')">Set your Raffall name</button>`;
     return;
   }
   const { data: st, error } = await sb.rpc('get_my_status', { p_comp: c.id });
@@ -666,10 +667,10 @@ async function renderPlayState(){
     if(c.access === 'buyers' && st.free_allowed === 0){
       const buy = `<a href="${esc(c.raffall_link || RAFFALL)}" target="_blank" rel="noopener">Raffall competition</a>`;
       if(st.requested){
-        note.innerHTML = `✅ <b>We've got your request.</b> We'll check <b>${esc(me.username)}</b> on Raffall — your spins appear here after our next update (${LIST_UPDATE}). Come back then!`;
+        note.innerHTML = `✅ <b>We've got your request.</b> We'll look for <b>${esc(me.username)}</b> in the Raffall entrants list — your spins appear here after our next update (${LIST_UPDATE}). Come back then!`;
       } else {
         actions.innerHTML = `<button class="spin-btn alt" onclick="requestSpins()">🎟️ I bought a ticket — check me</button>`;
-        note.innerHTML = `<b>${esc(me.username)}</b> isn't on the buyer list yet. We add new ticket buyers ${LIST_UPDATE}.<br>
+        note.innerHTML = `<b>${esc(me.username)}</b> isn't on the buyer list yet — we match the name shown in the Raffall entrants list. We add new ticket buyers ${LIST_UPDATE}.<br>
           Bought a ticket in our ${buy}? Tap the button and we'll check you first. Not yet? Buy a ticket, then tap it.`;
       }
     } else {
@@ -731,7 +732,7 @@ function finishSpin(r){
       <div class="big">🏆 You won ${prizeText(r)}!</div>
       <p>${isCredits
         ? `The credits are already in your wallet. New balance: <b>${nf(r.credits)}</b>.`
-        : `We'll message you on Raffall as <b>${esc(me.username)}</b> to arrange your payment. You can also reach us on Telegram @suportGiveaways.`}</p>
+        : `We'll contact you to arrange your payment. You can also reach us on Telegram @suportGiveaways.`}</p>
     </div>`;
     confetti();
     if(prizeCounts[current.id]) prizeCounts[current.id].won++;
@@ -770,7 +771,7 @@ async function renderWallet(){
   $('w-user').textContent = me.username;
   $('w-bal').textContent = nf(me.credits);
   $('w-val').textContent = `credits · worth £${(me.credits / 100).toFixed(2)}`;
-  $('acc-info').innerHTML = `Raffall username: <b>${esc(me.username)}</b><br>Email: ${esc(session.user.email)}<br>Wrong username? Message us on Telegram @suportGiveaways.`;
+  $('acc-info').innerHTML = `Raffall name: <b>${esc(me.username)}</b><br>Email: ${esc(session.user.email)}<br>Wrong name? Message us on Telegram @suportGiveaways.`;
   const { data, error } = await sb.from('credit_ledger').select('*').eq('user_id', me.id).order('created_at', { ascending:false }).limit(50);
   if(error) return $('w-ledger').innerHTML = `<div class="empty">${errText(error)}</div>`;
   if(!data.length) return $('w-ledger').innerHTML = '<div class="empty">No credit activity yet. Win credits in instant draws.</div>';
