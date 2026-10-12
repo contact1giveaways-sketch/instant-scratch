@@ -123,6 +123,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{ou
 .slot-display{display:flex;gap:6px;justify-content:center;background:#0a0a0a;border-radius:16px;padding:16px 10px;border:1px solid rgba(255,255,255,.08)}
 .slot-digit{font-family:'DM Mono',monospace;font-size:44px;font-weight:500;color:var(--goldtxt);width:52px;text-align:center;line-height:1}
 .slot-digit.spinning{animation:digitSpin .08s linear infinite;color:rgba(240,208,138,.55)}
+.slot-display.many .slot-digit{font-size:34px;width:40px}
 .slot-digit.landed{animation:digitLand .3s cubic-bezier(0.34,1.56,0.64,1)}
 @keyframes digitSpin{0%{transform:translateY(-4px);opacity:.7}50%{transform:translateY(4px);opacity:1}100%{transform:translateY(-4px);opacity:.7}}
 @keyframes digitLand{0%{transform:scale(1.3);color:#fff}60%{transform:scale(0.95)}100%{transform:scale(1)}}
@@ -194,6 +195,8 @@ footer{padding:10px 0 42px;color:#8b867d;font-size:11px}
   .playcard{border-radius:28px;padding:20px 16px}
   .playcard .card-title{font-size:26px}
   .slot-digit{font-size:34px;width:42px}
+  .slot-display.many{gap:4px}
+  .slot-display.many .slot-digit{font-size:26px;width:30px}
   .wallet{padding:24px}
   .mobilebar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;bottom:calc(12px + env(safe-area-inset-bottom));left:12px;right:12px;z-index:80;background:rgba(15,15,15,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid #2b2b2b;border-radius:18px;padding:8px;box-shadow:0 16px 45px rgba(0,0,0,.22)}
   .mtab{text-decoration:none;background:none;border:0;color:#a8a39a;text-align:center;font:800 9px 'DM Sans';padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:12px;cursor:pointer}
@@ -250,8 +253,8 @@ footer{padding:10px 0 42px;color:#8b867d;font-size:11px}
         <div class="status-line" id="pd-status"></div>
         <div class="slot-machine">
           <div class="slot-label">Your ticket number</div>
-          <div class="slot-display">
-            <div class="slot-digit" id="d1">0</div><div class="slot-digit" id="d2">0</div><div class="slot-digit" id="d3">0</div><div class="slot-digit" id="d4">0</div><div class="slot-digit" id="d5">0</div>
+          <div class="slot-display" id="slot-display">
+            <div class="slot-digit">0</div><div class="slot-digit">0</div><div class="slot-digit">0</div><div class="slot-digit">0</div><div class="slot-digit">0</div>
           </div>
         </div>
         <div id="pd-result"></div>
@@ -338,7 +341,7 @@ footer{padding:10px 0 42px;color:#8b867d;font-size:11px}
   <section class="section" id="sec-prizes">
     <div class="card">
       <div class="card-title">Prize list</div>
-      <div class="card-sub">Every prize in the competition, and who has won it so far.</div>
+      <div class="card-sub">Every prize, the ticket number it sits on, and who has won it so far. Land on that number to win it.</div>
       <select id="pr-comp" onchange="renderPrizes()"></select>
       <div class="stats" id="pr-stats" style="margin-top:14px"></div>
       <div id="pr-list"></div>
@@ -379,6 +382,8 @@ let handlingConfirm = FROM_CONFIRM;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const RAFFALL = 'https://raffall.com/giveaways_community';
+const LIST_UPDATE = 'every day at 1:00 PM UK time';   // când actualizezi lista de cumpărători
+const DEEP_COMP = parseInt(new URLSearchParams(location.search).get('c')) || null;   // ?c=ID de pe site
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -427,7 +432,12 @@ function prizeText(p){
   if(p.label) return esc(p.label);
   return p.kind === 'credits' ? `${nf(p.amount)} credits` : `£${Number(p.amount).toFixed(2).replace(/\.00$/, '')}`;
 }
-const ticketStr = t => String(t).padStart(5, '0');
+/* Câte cifre are biletul: 5 pentru max 99.999, 6 pentru 300.000 etc. */
+const digitsFor = c => Math.max(5, String(c ? c.total_tickets : 0).length);
+function ticketStr(t, compId){
+  const c = compId ? comps.find(x => x.id === compId) : current;
+  return String(t).padStart(digitsFor(c), '0');
+}
 const ago = iso => {
   const s = (Date.now() - new Date(iso)) / 1000;
   if(s < 60) return 'just now';
@@ -590,7 +600,12 @@ function backToList(){
   $('play-list').style.display = 'block';
   loadComps();
 }
-function resetSlot(){ [1,2,3,4,5].forEach(i => { const d = $('d' + i); d.textContent = '0'; d.className = 'slot-digit'; }); }
+function resetSlot(){
+  const n = digitsFor(current);
+  const box = $('slot-display');
+  box.classList.toggle('many', n > 5);
+  box.innerHTML = Array.from({ length:n }, () => '<div class="slot-digit">0</div>').join('');
+}
 
 async function openComp(id){
   const c = comps.find(x => x.id === id); if(!c) return;
@@ -648,14 +663,31 @@ async function renderPlayState(){
   actions.innerHTML = btns.join('');
 
   if(!btns.length){
-    note.innerHTML = c.access === 'buyers' && st.free_allowed === 0
-      ? `We couldn't find <b>${esc(me.username)}</b> among the ticket buyers yet. Buy a ticket in our <a href="${esc(c.raffall_link || RAFFALL)}" target="_blank" rel="noopener">Raffall competition</a> — spins are added after your purchase.`
-      : "You've used all your spins in this competition. Thanks for playing!";
+    if(c.access === 'buyers' && st.free_allowed === 0){
+      const buy = `<a href="${esc(c.raffall_link || RAFFALL)}" target="_blank" rel="noopener">Raffall competition</a>`;
+      if(st.requested){
+        note.innerHTML = `✅ <b>We've got your request.</b> We'll check <b>${esc(me.username)}</b> on Raffall — your spins appear here after our next update (${LIST_UPDATE}). Come back then!`;
+      } else {
+        actions.innerHTML = `<button class="spin-btn alt" onclick="requestSpins()">🎟️ I bought a ticket — check me</button>`;
+        note.innerHTML = `<b>${esc(me.username)}</b> isn't on the buyer list yet. We add new ticket buyers ${LIST_UPDATE}.<br>
+          Bought a ticket in our ${buy}? Tap the button and we'll check you first. Not yet? Buy a ticket, then tap it.`;
+      }
+    } else {
+      note.innerHTML = "You've used all your spins in this competition. Thanks for playing!";
+    }
   } else if(creditOK && st.credits < st.credit_cost){
     note.textContent = `You need ${nf(st.credit_cost)} credits for a credit spin.`;
   } else if(st.free_left === 0 && c.access === 'buyers' && st.free_allowed === 0){
     note.innerHTML = `Free spins are for ticket buyers in our <a href="${esc(c.raffall_link || RAFFALL)}" target="_blank" rel="noopener">Raffall competition</a>.`;
   }
+}
+
+async function requestSpins(){
+  if(!current) return;
+  const { data, error } = await sb.rpc('request_spins', { p_comp: current.id });
+  if(error) return showAlert('play-alert','error', errText(error));
+  if(data === 'already_listed') showAlert('play-alert','success','Good news — you are already on the list. Spin away!');
+  renderPlayState();
 }
 
 /* ═══ SPIN ═════════════════════════════════════════════════════ */
@@ -665,7 +697,7 @@ async function spin(pay){
   hideAlert('play-alert');
   $('pd-result').innerHTML = '';
   document.querySelectorAll('#pd-actions button').forEach(b => b.disabled = true);
-  const digits = [1,2,3,4,5].map(i => $('d' + i));
+  const digits = Array.from(document.querySelectorAll('#slot-display .slot-digit'));
   digits.forEach(d => { d.className = 'slot-digit spinning'; });
   const ticker = setInterval(() => digits.forEach(d => { if(d.classList.contains('spinning')) d.textContent = Math.floor(Math.random() * 10); }), 70);
 
@@ -683,7 +715,7 @@ async function spin(pay){
     d.classList.remove('spinning');
     d.textContent = n;
     d.classList.add('landed');
-    if(i === 4){
+    if(i === target.length - 1){
       clearInterval(ticker);
       setTimeout(() => finishSpin(data), 450);
     }
@@ -763,13 +795,14 @@ async function renderPrizes(){
   ]);
   if(p.error) return $('pr-list').innerHTML = `<div class="empty">${errText(p.error)}</div>`;
   const who = Object.fromEntries((d.data || []).map(x => [x.prize_id, x.username]));
-  const list = p.data.slice().sort((a,b) => (a.kind === b.kind ? b.amount - a.amount : a.kind === 'cash' ? -1 : 1));
+  const list = p.data.slice().sort((a,b) => (!!a.won_by - !!b.won_by) || (a.kind === b.kind ? b.amount - a.amount : a.kind === 'cash' ? -1 : 1));
   const won = list.filter(x => x.won_by).length;
   $('pr-stats').innerHTML = `<div class="stat"><b>${list.length}</b><span>prizes</span></div><div class="stat"><b>${won}</b><span>won</span></div><div class="stat"><b>${list.length - won}</b><span>still to win</span></div>`;
   if(!list.length) return $('pr-list').innerHTML = '<div class="empty">Prizes coming soon.</div>';
-  $('pr-list').innerHTML = `<div class="table-wrap"><table><thead><tr><th>Prize</th><th>Status</th></tr></thead><tbody>` +
+  $('pr-list').innerHTML = `<div class="table-wrap"><table><thead><tr><th>Prize</th><th>Winning ticket</th><th>Status</th></tr></thead><tbody>` +
     list.map(x => `<tr class="${x.won_by ? 'taken' : ''}"><td><b style="color:${x.won_by ? 'inherit' : 'var(--gold)'}">${prizeText(x)}</b></td>
-      <td>${x.won_by ? `Won by ${esc(who[x.id] || '—')} · ticket #${ticketStr(x.ticket)}` : 'Still to win'}</td></tr>`).join('') +
+      <td style="font-family:'DM Mono',monospace">#${ticketStr(x.ticket, id)}</td>
+      <td>${x.won_by ? `Won by ${esc(who[x.id] || '—')}` : 'Still to win'}</td></tr>`).join('') +
     '</tbody></table></div>';
 }
 
@@ -782,7 +815,7 @@ async function renderWinners(){
   if(!data.length) return $('win-list').innerHTML = '<div class="empty">No winners yet — could be you!</div>';
   $('win-list').innerHTML = data.map(w => `<div class="win-item">
     <div class="av">${esc((w.username || '?').slice(0,1).toUpperCase())}</div>
-    <div class="main"><div class="name">${esc(w.username)}</div><div class="sub">${esc(w.instant_competitions ? w.instant_competitions.name : '')} · #${ticketStr(w.ticket)} · ${ago(w.created_at)}</div></div>
+    <div class="main"><div class="name">${esc(w.username)}</div><div class="sub">${esc(w.instant_competitions ? w.instant_competitions.name : '')} · #${String(w.ticket).padStart(5,'0')} · ${ago(w.created_at)}</div></div>
     <div class="prize">${prizeText(w.instant_prizes)}</div>
   </div>`).join('');
 }
@@ -836,6 +869,7 @@ sb.auth.onAuthStateChange(async (event) => {
   }
   await refreshUser();
   await loadComps();
+  if(DEEP_COMP && comps.some(c => c.id === DEEP_COMP)) openComp(DEEP_COMP);
   if(session && !me) showTab('account');
 })();
 </script>
