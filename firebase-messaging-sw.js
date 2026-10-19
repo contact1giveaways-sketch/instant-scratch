@@ -24,7 +24,7 @@ messaging.onBackgroundMessage(payload => {
   // Formatul vechi („notification”) e afișat deja de Firebase — nu-l dublăm
   if (n.title && !d.title) return;
 
-  self.registration.showNotification(d.title || 'Giveaways Community', {
+  return self.registration.showNotification(d.title || 'Giveaways Community', {
     body: d.body || '',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
