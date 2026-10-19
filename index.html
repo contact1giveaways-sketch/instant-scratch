@@ -557,7 +557,7 @@ function renderChip(){
 /* ═══ COMPETIȚII ═══════════════════════════════════════════════ */
 async function loadComps(){
   const [c, p] = await Promise.all([
-    sb.from('instant_competitions').select('*').neq('status', 'draft').order('created_at', { ascending:false }),
+    sb.from('instant_competitions').select('*').in('status', ['active','paused']).order('created_at', { ascending:false }),
     sb.from('instant_prizes').select('competition_id,won_by')
   ]);
   if(c.error){ $('comp-list').innerHTML = `<div class="empty">${errText(c.error)}</div>`; return; }
