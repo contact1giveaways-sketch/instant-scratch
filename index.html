@@ -944,7 +944,8 @@ function renderNotifCard(){
   let dismissed = 0;
   try{ dismissed = parseInt(localStorage.getItem('ip_notif_dismissed')) || 0; }catch(e){}
   const recentlyDismissed = Date.now() - dismissed < 3 * 864e5;
-  if(!me || pushGranted() || recentlyDismissed || (pushSupported() && Notification.permission === 'denied')){ card.style.display = 'none'; return; }
+  const asked = new URLSearchParams(location.search).get('notify') === '1';
+  if(pushGranted() || (recentlyDismissed && !asked) || (pushSupported() && Notification.permission === 'denied')){ card.style.display = 'none'; return; }
   card.style.display = 'block';
   if(isIOS() && !isStandalone()){
     card.innerHTML = `<div class="card-title">🔔 Don't miss the next opening</div>
