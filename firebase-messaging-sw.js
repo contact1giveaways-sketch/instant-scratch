@@ -15,7 +15,7 @@ firebase.initializeApp({
   appId: "1:335882371621:web:2ab7ceb418b1524b1e75cc"
 });
 
-const DEFAULT_URL = 'https://instant.giveawayscommunity.com';
+const DEFAULT_URL = 'https://giveawayscommunity.com/play/';
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(payload => {
