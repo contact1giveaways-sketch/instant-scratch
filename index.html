@@ -292,6 +292,7 @@ footer{padding:10px 0 42px;color:#8b867d;font-size:11px}
         <div class="card-sub" id="acc-info"></div>
         <a class="btn btn-ghost btn-full" href="https://giveawayscommunity.com" style="text-decoration:none">← Back to giveawayscommunity.com</a>
         <button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="signOut()">Sign out</button>
+        <button class="link-btn" style="display:block;margin:18px auto 0;color:var(--red)" onclick="deleteMyAccount()">Delete my account</button>
       </div>
     </div>
   </section>
@@ -416,7 +417,8 @@ const ERR = {
   sold_out:             'All tickets in this competition have been drawn.',
   username_taken:       'That name is already linked to another account. If it is yours, contact us on Telegram @suportGiveaways and we will sort it out.',
   invalid_username:     'Your name must be 2–40 characters.',
-  profile_exists:       'Your Raffall name is already set.'
+  profile_exists:       'Your Raffall name is already set.',
+  has_prizes:           "You've won prizes with this account, so it can't be deleted here. Message us on Telegram @suportGiveaways and we'll help."
 };
 function errText(e){
   const m = (e && (e.message || e.error_description)) || String(e);
@@ -531,6 +533,26 @@ async function signOut(){
   renderChip();
   showTab('play');
   if(current) openComp(current.id);
+}
+
+async function deleteMyAccount(){
+  if(!me) return;
+  const msg = `Delete your account "${me.username}"?\n\n`
+    + `This permanently removes your account, your ${nf(me.credits)} credits and your spin history. `
+
+    + `This cannot be undone.`;
+  if(!confirm(msg)) return;
+  const typed = prompt('To confirm, type DELETE in capital letters:');
+  if(typed === null) return;
+  if(typed.trim() !== 'DELETE') return alert('Account not deleted — you didn\'t type DELETE.');
+  const { error } = await sb.rpc('delete_my_account');
+  if(error) return alert(errText(error));
+  await sb.auth.signOut({ scope: 'local' });
+  me = null; session = null;
+  renderChip();
+  await refreshUser();
+  showTab('play');
+  alert('Your account has been deleted.');
 }
 
 /* Starea contului: fără sesiune → login; sesiune fără profil → username */
