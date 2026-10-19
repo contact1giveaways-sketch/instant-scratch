@@ -52,7 +52,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .alert-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red)}
 .alert-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:#2f5fb3}
 .alert-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--orange)}
-#global-alert{position:sticky;top:10px;z-index:20}
+#global-alert{position:sticky;top:10px;z-index:150}
 .tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:5px;margin-bottom:22px;overflow-x:auto}
 .tab{flex:0 0 auto;padding:10px 15px;background:transparent;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;border-radius:10px;cursor:pointer;white-space:nowrap}
 .tab:hover{color:var(--text)}
@@ -103,6 +103,11 @@ tr:last-child td{border-bottom:none}
 .cgroup>summary span:first-child{flex:1}
 .gcount{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:1px 10px;font-size:12px;color:var(--muted)}
 .cgroup[data-key="closed"]{border-top:1px solid var(--border);padding-top:6px}
+.lmodal{position:fixed;inset:0;z-index:100;background:rgba(16,16,16,.45);display:none;align-items:center;justify-content:center;padding:16px}
+.lmodal.open{display:flex}
+.lbox{background:#fff;border-radius:20px;padding:22px;width:100%;max-width:480px;max-height:calc(100vh - 32px);overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.25)}
+.lbox .preview-list span{cursor:pointer}
+.lbox .preview-list span:hover{border-color:var(--gold)}
 </style>
 </head>
 <body>
@@ -499,8 +504,105 @@ async function saveComp(){
   await loadAll();
   resetCompForm();
 }
+/* ═══ DESCHIDE + NOTIFICĂ ══════════════════════════════════════ */
+const INSTANT_URL = 'https://instant.giveawayscommunity.com/';
+let launchId = null;
+const ukTime = d => d.toLocaleTimeString('en-GB', { timeZone:'Europe/London', hour:'2-digit', minute:'2-digit' });
+function closeDateFromInput(){
+  const v = $('l-close').value; if(!v) return null;
+  const [h, m] = v.split(':').map(Number);
+  const d = new Date(); d.setHours(h, m, 0, 0);
+  if(d <= new Date()) d.setDate(d.getDate() + 1);      // ora a trecut azi → mâine
+  return d;
+}
+function openLaunch(id){
+  const c = compById(id); if(!c) return;
+  launchId = id;
+  const active = c.status === 'active';
+  $('l-title').textContent = active ? '🔔 Notifică: ' + c.name : '▶ Deschide + notifică: ' + c.name;
+  $('l-sub').textContent = active ? 'Competiția e deja deschisă. Poți schimba ora de închidere și trimite o notificare.' : 'Competiția se deschide imediat ce apeși butonul.';
+  const d = c.closes_at ? new Date(c.closes_at) : new Date(Date.now() + 30 * 60000);
+  if(!c.closes_at) d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
+  $('l-close').value = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  $('l-has-close').checked = true;
+  $('l-notify').checked = true;
+  $('l-quick').innerHTML = [15, 30, 60, 120].map(m => `<span onclick="quickClose(${m})">+${m < 60 ? m + ' min' : m / 60 + ' h'}</span>`).join('');
+  $('l-url').textContent = INSTANT_URL + '?c=' + c.id;
+  $('l-go').textContent = active ? '💾 Salvează + trimite' : '▶ Deschide acum';
+  $('l-ntitle').dataset.auto = '1'; $('l-nbody').dataset.auto = '1';
+  syncLaunch(true);
+  $('launch-modal').classList.add('open');
+}
+function quickClose(min){
+  const d = new Date(Date.now() + min * 60000);
+  $('l-close').value = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  syncLaunch();
+}
+function closeLaunch(){ $('launch-modal').classList.remove('open'); launchId = null; }
+function syncLaunch(){
+  const c = compById(launchId); if(!c) return;
+  const hasClose = $('l-has-close').checked, notify = $('l-notify').checked;
+  $('l-close-wrap').style.display = hasClose ? 'block' : 'none';
+  $('l-msg-wrap').style.display = notify ? 'block' : 'none';
+  const d = hasClose ? closeDateFromInput() : null;
+  $('l-close-note').innerHTML = d
+    ? `Se închide la <b>${d.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})}</b> ora României = <b>${ukTime(d)}</b> UK${d.getDate() !== new Date().getDate() ? ' (mâine)' : ''}. Apoi trece singură pe pauză.`
+    : '';
+  // textul notificării se completează singur, până îl modifici tu
+  const shortName = c.name.replace(/\s*\(.*$/, '').trim() || c.name;
+  if($('l-ntitle').dataset.auto) $('l-ntitle').value = `⚡ ${shortName} is OPEN!`.slice(0, 65);
+  if($('l-nbody').dataset.auto) $('l-nbody').value = (d ? `Open now until ${ukTime(d)} UK time only. ` : 'Open now. ')
+    + (/every ticket wins/i.test(c.name) ? 'Every ticket wins — tap to spin!' : 'Tap to spin!');
+}
+document.addEventListener('input', e => { if(e.target.id === 'l-ntitle' || e.target.id === 'l-nbody') delete e.target.dataset.auto; });
+
+async function sendPush({ title, body, url, trigger, only_me }){
+  const { data, error } = await sb.functions.invoke('send-push', { body: { title, body, url, trigger, only_me: !!only_me } });
+  if(error){
+    let msg = error.message || 'Eroare';
+    try{ const j = await error.context.json(); if(j && j.error) msg = j.error; }catch(e){}
+    throw new Error(msg);
+  }
+  return data;
+}
+async function testLaunchPush(){
+  const c = compById(launchId); if(!c) return;
+  try{
+    const r = await sendPush({ title: $('l-ntitle').value.trim() || '🧪 Test', body: $('l-nbody').value.trim(), url: INSTANT_URL + '?c=' + c.id, trigger:'test', only_me: true });
+    flash('success', `🧪 Test trimis pe ${r.sent} dispozitiv(e) ale tale. Competiția NU a fost deschisă.`);
+  }catch(e){ flash('error', esc(e.message)); }
+}
+async function doLaunch(){
+  const c = compById(launchId); if(!c) return;
+  const d = $('l-has-close').checked ? closeDateFromInput() : null;
+  if($('l-has-close').checked && !d) return flash('error','Alege ora de închidere.');
+  const notify = $('l-notify').checked;
+  const title = $('l-ntitle').value.trim(), body = $('l-nbody').value.trim();
+  if(notify && !title) return flash('error','Scrie titlul notificării.');
+  const prizesLeft = prizes.filter(p => p.competition_id === c.id && !p.won_by).length;
+  if(!prizesLeft && !confirm('Competiția nu are premii libere. O deschizi totuși?')) return;
+  $('l-go').disabled = true;
+  const { error } = await sb.from('instant_competitions').update({ status:'active', closes_at: d ? d.toISOString() : null }).eq('id', c.id);
+  if(error){ $('l-go').disabled = false; return flash('error', errMsg(error)); }
+  let msg = d ? `▶ Deschisă până la ${d.toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})}.` : '▶ Deschisă.';
+  if(notify){
+    try{
+      const r = await sendPush({ title, body, url: INSTANT_URL + '?c=' + c.id, trigger:'instant_open' });
+      msg += ` 🔔 Notificare trimisă la ${r.sent} abonați.`;
+    }catch(e){
+      $('l-go').disabled = false;
+      closeLaunch(); await loadAll();
+      return flash('error', msg + ' Dar notificarea NU a plecat: ' + esc(e.message));
+    }
+  }
+  $('l-go').disabled = false;
+  closeLaunch();
+  flash('success', msg);
+  await loadAll();
+}
+
 async function setStatus(id, status){
-  const { error } = await sb.from('instant_competitions').update({ status }).eq('id', id);
+  const { error } = await sb.from('instant_competitions').update({ status, closes_at: null }).eq('id', id);
   if(error) return flash('error', errMsg(error));
   flash('success', status === 'closed'
     ? '🏁 Încheiată — nu mai apare pe site. O găsești jos, la „Încheiate”.'
@@ -531,7 +633,8 @@ function compRow(c){
     c.credit_cost > 0 ? `${c.credit_cost} credite/spin` + (c.max_credit_spins ? `, max ${c.max_credit_spins}` : '') : 'fără credite'
   ];
   const actions = [];
-  if(c.status !== 'active') actions.push(`<button class="btn btn-gold btn-sm" onclick="setStatus(${c.id},'active')">▶ ${c.status === 'closed' ? 'Redeschide' : 'Activează'}</button>`);
+  if(c.status !== 'closed') actions.push(`<button class="btn btn-gold btn-sm" onclick="openLaunch(${c.id})">🔔 ${c.status === 'active' ? 'Notifică' : 'Deschide + notifică'}</button>`);
+  if(c.status !== 'active') actions.push(`<button class="btn btn-ghost btn-sm" onclick="setStatus(${c.id},'active')">▶ ${c.status === 'closed' ? 'Redeschide' : 'Activează'}</button>`);
   if(c.status === 'active') actions.push(`<button class="btn btn-ghost btn-sm" onclick="setStatus(${c.id},'paused')">⏸ Pauză</button>`);
   if(c.status !== 'closed' && c.status !== 'draft') actions.push(`<button class="btn btn-ghost btn-sm" onclick="setStatus(${c.id},'closed')">🏁 Încheie</button>`);
   actions.push(`<button class="btn btn-ghost btn-sm" title="Editează" onclick="editComp(${c.id})">✏️</button>`);
@@ -541,6 +644,7 @@ function compRow(c){
       <div class="row-name">${esc(c.name)}</div>
       ${c.raffle_id && c.status !== 'closed' ? '<div class="row-sub">🔗 Legată de tombola de pe site — butonul de pe card apare când o activezi.</div>' : ''}
       <div class="row-sub">${statusPill(c.status)}${accessPill(c.access)} ${parts.join(' · ')}</div>
+      ${c.status === 'active' && c.closes_at ? `<div class="row-sub" style="color:var(--orange);font-weight:700">⏱ Se închide automat la ${new Date(c.closes_at).toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})} (ora României) și trece pe pauză</div>` : ''}
     </div>
     <div class="row-actions">${actions.join('')}</div>
   </div>`;
@@ -855,7 +959,8 @@ function renderPlayers(){
   $('pl-stats').innerHTML = `
     <div class="stat"><b>${players.length}</b><span>conturi</span></div>
     <div class="stat"><b>${players.filter(p => p.verified).length}</b><span>verificate</span></div>
-    <div class="stat"><b>${totalCred.toLocaleString('en-GB')}</b><span>credite în conturi (£${(totalCred / 100).toFixed(2)})</span></div>`;
+    <div class="stat"><b>${totalCred.toLocaleString('en-GB')}</b><span>credite în conturi (£${(totalCred / 100).toFixed(2)})</span></div>
+    <div class="stat"><b>${players.filter(p => p.email_alerts).length}</b><span>📧 acceptă emailuri</span></div>`;
   if(!list.length){ $('pl-list').innerHTML = `<div class="empty">${players.length ? 'Niciun rezultat.' : 'Niciun cont încă.'}</div>`; return; }
   $('pl-list').innerHTML = list.map(p => `<div class="row" id="pl-${p.id}">
     <div class="row-main">
@@ -968,5 +1073,31 @@ async function renderDraws(){
 syncAccessFields();
 enterIfAdmin();
 </script>
+<div class="lmodal" id="launch-modal" onclick="if(event.target===this)closeLaunch()">
+  <div class="lbox">
+    <div class="card-title" id="l-title">Deschide + notifică</div>
+    <div class="note" id="l-sub"></div>
+    <label class="toggle-line"><input type="checkbox" id="l-has-close" checked onchange="syncLaunch()"> Se închide automat la o oră</label>
+    <div id="l-close-wrap">
+      <label for="l-close">Ora de închidere (ora României)</label>
+      <input type="time" id="l-close" oninput="syncLaunch()">
+      <div class="preview-list" id="l-quick"></div>
+      <div class="note" id="l-close-note"></div>
+    </div>
+    <label class="toggle-line"><input type="checkbox" id="l-notify" checked onchange="syncLaunch()"> 🔔 Trimite notificare la toți abonații</label>
+    <div id="l-msg-wrap">
+      <label for="l-ntitle">Titlu notificare</label>
+      <input type="text" id="l-ntitle" maxlength="65">
+      <label for="l-nbody">Mesaj</label>
+      <textarea id="l-nbody" rows="2" maxlength="140" style="min-height:60px;font-family:inherit"></textarea>
+      <div class="note">Se deschide direct competiția: <span id="l-url"></span></div>
+    </div>
+    <button class="btn btn-ghost btn-full" style="margin-top:12px" onclick="testLaunchPush()">🧪 Trimite notificarea doar mie (test)</button>
+    <div class="btn-row">
+      <button class="btn btn-gold" id="l-go" onclick="doLaunch()">▶ Deschide acum</button>
+      <button class="btn btn-ghost" onclick="closeLaunch()">Renunță</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
