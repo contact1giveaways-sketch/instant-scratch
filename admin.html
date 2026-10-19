@@ -868,6 +868,7 @@ function renderPlayers(){
       <button class="btn btn-ghost btn-sm" onclick="adjustCredits('${p.id}')">± Credite</button>
       <button class="btn btn-ghost btn-sm" onclick="renameUser('${p.id}')">✏️ Nume</button>
       <button class="btn btn-ghost btn-sm" onclick="showLedger('${p.id}')">📜 Istoric</button>
+      <button class="btn btn-danger btn-sm" title="Șterge contul" onclick="deletePlayer('${p.id}')">🗑️</button>
     </div>
   </div>`).join('');
 }
@@ -887,6 +888,29 @@ async function renameUser(id){
   if(error) return flash('error', errMsg(error));
   flash('success','✏️ Username schimbat.');
   await loadPlayers();
+}
+async function deletePlayer(id){
+  const p = playerById(id); if(!p) return;
+  const [d, w, a] = await Promise.all([
+    sb.from('instant_draws').select('id', { count:'exact', head:true }).eq('user_id', id),
+    sb.from('instant_prizes').select('id', { count:'exact', head:true }).eq('won_by', id),
+    sb.from('admins').select('user_id').eq('user_id', id).maybeSingle()
+  ]);
+  const isAdmin = !!(a && a.data);
+  const lines = [`Ștergi contul „${p.username}”?`, ''];
+  if(isAdmin) lines.push('⚠️ E contul tău de ADMIN: se șterge doar profilul de jucător. Loginul rămâne, poți intra în admin în continuare.', '');
+  lines.push(`• ${p.credits.toLocaleString('en-GB')} credite`, `• ${d.count || 0} spin-uri`);
+  if(w.count) lines.push(`• ${w.count} premii câștigate — redevin LIBERE și se pot câștiga din nou`);
+  lines.push('', 'Nu se poate anula.');
+  if(!confirm(lines.join('\n'))) return;
+  if(w.count && !confirm(`Sigur? Contul are ${w.count} premii câștigate. Dacă e un jucător real, a câștigat corect — mai bine nu-l ștergi.`)) return;
+  const { data, error } = await sb.rpc('admin_delete_player', { p_user: id });
+  if(error) return flash('error', /admin_delete_player/.test(error.message) ? 'Rulează întâi în Supabase fișierul supabase-sterge-jucator.sql.' : errMsg(error));
+  flash('success', data === 'profile_only'
+    ? `🗑️ Profilul de jucător „${esc(p.username)}” a fost șters. Contul de admin rămâne.`
+    : `🗑️ Contul „${esc(p.username)}” a fost șters.`);
+  await Promise.all([loadPlayers(), loadPrizeSummary()]);
+  renderComps();
 }
 async function adjustCredits(id){
   const p = playerById(id); if(!p) return;
