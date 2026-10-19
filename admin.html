@@ -95,6 +95,14 @@ tr:last-child td{border-bottom:none}
 .spin-mode input[type=radio]{width:18px;height:18px;margin:0;accent-color:#101010;flex-shrink:0}
 .spin-mode input[type=number]{width:80px;padding:6px 8px;display:inline-block;margin:0 4px}
 #b-preview{margin-top:10px}
+.cgroup{margin-bottom:14px}
+.cgroup>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:10px 4px;font-weight:700;font-size:14px;color:var(--text)}
+.cgroup>summary::-webkit-details-marker{display:none}
+.cgroup>summary::after{content:'▾';margin-left:8px;color:var(--muted);transition:transform .15s}
+.cgroup:not([open])>summary::after{transform:rotate(-90deg)}
+.cgroup>summary span:first-child{flex:1}
+.gcount{background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:1px 10px;font-size:12px;color:var(--muted)}
+.cgroup[data-key="closed"]{border-top:1px solid var(--border);padding-top:6px}
 </style>
 </head>
 <body>
@@ -410,11 +418,22 @@ async function loadAll(){
   fillCompSelects();
 }
 function fillCompSelects(){
-  const opts = comps.map(c => `<option value="${c.id}">${esc(c.name)} — ${STATUS[c.status][0]}</option>`).join('');
-  ['p-comp','b-comp','d-comp'].forEach(id => {
+  const opt = c => `<option value="${c.id}">${esc(c.name)} — ${STATUS[c.status][0]}</option>`;
+  const grp = (label, list) => list.length ? `<optgroup label="${label}">${list.map(opt).join('')}</optgroup>` : '';
+  const active = comps.filter(c => c.status === 'active');
+  const waiting = comps.filter(c => c.status === 'paused' || c.status === 'draft');
+  const closed = comps.filter(c => c.status === 'closed');
+  const sets = {
+    // Cumpărători: doar ce se mai poate juca — încheiatele nu apar deloc
+    'b-comp': grp('🟢 Active', active) + grp('⏸ Pe pauză / ciorne', waiting),
+    // Premii și Extrageri: încheiatele rămân, la final, ca istoric
+    'p-comp': grp('🟢 Active', active) + grp('⏸ Pe pauză / ciorne', waiting) + grp('🏁 Încheiate', closed),
+    'd-comp': grp('🟢 Active', active) + grp('⏸ Pe pauză / ciorne', waiting) + grp('🏁 Încheiate', closed)
+  };
+  Object.entries(sets).forEach(([id, html]) => {
     const el = $(id), prev = el.value;
-    el.innerHTML = opts || '<option value="">Nicio competiție încă</option>';
-    if(prev && comps.some(c => String(c.id) === prev)) el.value = prev;
+    el.innerHTML = html || '<option value="">Nicio competiție activă</option>';
+    if(prev && [...el.options].some(o => o.value === prev)) el.value = prev;
   });
 }
 const compById = id => comps.find(c => String(c.id) === String(id));
@@ -483,7 +502,9 @@ async function saveComp(){
 async function setStatus(id, status){
   const { error } = await sb.from('instant_competitions').update({ status }).eq('id', id);
   if(error) return flash('error', errMsg(error));
-  flash('success', `Stare schimbată: ${STATUS[status][0]}.`);
+  flash('success', status === 'closed'
+    ? '🏁 Încheiată — nu mai apare pe site. O găsești jos, la „Încheiate”.'
+    : `Stare schimbată: ${STATUS[status][0]}.`);
   await loadAll();
 }
 async function deleteComp(id){
@@ -499,33 +520,48 @@ async function deleteComp(id){
   flash('success','🗑️ Ștearsă.');
   await loadAll();
 }
+let closedOpen = false;
+function compRow(c){
+  const ps = prizes.filter(p => p.competition_id === c.id);
+  const won = ps.filter(p => p.won_by).length;
+  const parts = [
+    `${c.total_tickets.toLocaleString('en-GB')} bilete`,
+    `${ps.length} premii (${won} câștigate)`,
+    c.access === 'open' ? `${c.free_spins} spin gratuit/cont` : 'spin-uri după listă',
+    c.credit_cost > 0 ? `${c.credit_cost} credite/spin` + (c.max_credit_spins ? `, max ${c.max_credit_spins}` : '') : 'fără credite'
+  ];
+  const actions = [];
+  if(c.status !== 'active') actions.push(`<button class="btn btn-gold btn-sm" onclick="setStatus(${c.id},'active')">▶ ${c.status === 'closed' ? 'Redeschide' : 'Activează'}</button>`);
+  if(c.status === 'active') actions.push(`<button class="btn btn-ghost btn-sm" onclick="setStatus(${c.id},'paused')">⏸ Pauză</button>`);
+  if(c.status !== 'closed' && c.status !== 'draft') actions.push(`<button class="btn btn-ghost btn-sm" onclick="setStatus(${c.id},'closed')">🏁 Încheie</button>`);
+  actions.push(`<button class="btn btn-ghost btn-sm" title="Editează" onclick="editComp(${c.id})">✏️</button>`);
+  actions.push(`<button class="btn btn-danger btn-sm" title="Șterge" onclick="deleteComp(${c.id})">🗑️</button>`);
+  return `<div class="row${$('c-id').value === String(c.id) ? ' editing' : ''}">
+    <div class="row-main">
+      <div class="row-name">${esc(c.name)}</div>
+      ${c.raffle_id && c.status !== 'closed' ? '<div class="row-sub">🔗 Legată de tombola de pe site — butonul de pe card apare când o activezi.</div>' : ''}
+      <div class="row-sub">${statusPill(c.status)}${accessPill(c.access)} ${parts.join(' · ')}</div>
+    </div>
+    <div class="row-actions">${actions.join('')}</div>
+  </div>`;
+}
 function renderComps(){
   const wrap = $('comp-list');
   if(!comps.length){ wrap.innerHTML = '<div class="empty">Nicio competiție încă. Creează prima mai sus.</div>'; return; }
-  wrap.innerHTML = comps.map(c => {
-    const ps = prizes.filter(p => p.competition_id === c.id);
-    const won = ps.filter(p => p.won_by).length;
-    const parts = [
-      `${c.total_tickets.toLocaleString('en-GB')} bilete`,
-      `${ps.length} premii (${won} câștigate)`,
-      c.access === 'open' ? `${c.free_spins} spin gratuit/cont` : 'spin-uri după listă',
-      c.credit_cost > 0 ? `${c.credit_cost} credite/spin` + (c.max_credit_spins ? `, max ${c.max_credit_spins}` : '') : 'fără credite'
-    ];
-    const actions = [];
-    if(c.status !== 'active') actions.push(`<button class="btn btn-gold btn-sm" onclick="setStatus(${c.id},'active')">▶ Activează</button>`);
-    if(c.status === 'active') actions.push(`<button class="btn btn-ghost btn-sm" onclick="setStatus(${c.id},'paused')">⏸ Pauză</button>`);
-    if(c.status !== 'closed' && c.status !== 'draft') actions.push(`<button class="btn btn-ghost btn-sm" onclick="setStatus(${c.id},'closed')">🏁 Încheie</button>`);
-    actions.push(`<button class="btn btn-ghost btn-sm" title="Editează" onclick="editComp(${c.id})">✏️</button>`);
-    actions.push(`<button class="btn btn-danger btn-sm" title="Șterge" onclick="deleteComp(${c.id})">🗑️</button>`);
-    return `<div class="row${$('c-id').value === String(c.id) ? ' editing' : ''}">
-      <div class="row-main">
-        <div class="row-name">${esc(c.name)}</div>
-        ${c.raffle_id ? '<div class="row-sub">🔗 Legată de tombola de pe site — butonul de pe card apare când o activezi.</div>' : ''}
-        <div class="row-sub">${statusPill(c.status)}${accessPill(c.access)} ${parts.join(' · ')}</div>
-      </div>
-      <div class="row-actions">${actions.join('')}</div>
-    </div>`;
-  }).join('');
+  const by = st => comps.filter(c => c.status === st);
+  const group = (key, title, list, open, note) => list.length ? `
+    <details class="cgroup" data-key="${key}"${open ? ' open' : ''}>
+      <summary><span>${title}</span><span class="gcount">${list.length}</span></summary>
+      ${note ? `<div class="note" style="margin:0 0 10px">${note}</div>` : ''}
+      ${list.map(compRow).join('')}
+    </details>` : '';
+  wrap.innerHTML =
+      group('active', '🟢 Active', by('active'), true)
+    + group('paused', '⏸ Pe pauză', by('paused'), true, 'Se văd pe site, dar nu se poate juca.')
+    + group('draft',  '📝 Ciorne',  by('draft'),  true, 'Nu apar pe site. Adaugă premiile, apoi activează.')
+    + group('closed', '🏁 Încheiate', by('closed'), closedOpen, 'Nu mai apar pe site. Premiile și extragerile rămân în taburile Premii și Extrageri.');
+  const cg = wrap.querySelector('details[data-key="closed"]');
+  if(cg) cg.addEventListener('toggle', () => { closedOpen = cg.open; });
 }
 
 /* ═══ PREMII ═══════════════════════════════════════════════════ */
